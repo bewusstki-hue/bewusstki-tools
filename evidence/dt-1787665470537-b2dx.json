@@ -1,0 +1,28 @@
+{
+  "bundle_id": "devtask-execution-dt-1787665470537-b2dx-1-1787665738414",
+  "capability": "devtask.execution@1.0",
+  "run_id": "dt-1787665470537-b2dx:1",
+  "claim_ladder": "L2",
+  "executed_at": "2026-08-25T13:48:58.415Z",
+  "trace_events": [
+    "devtask_contract_bound:{\"task_id\":\"dt-1787665470537-b2dx\",\"attempt_number\":1,\"contract_hash\":\"6d78b5081d29c113c329deaa2ed23644274814c115080ac34ce53dff533423d0\",\"contract_schema_version\":\"work-contract@1.0\",\"risk_class\":\"R3\"}",
+    "devtask_attempt_started:{\"task_id\":\"dt-1787665470537-b2dx\",\"attempt_number\":1,\"started_at\":\"2026-08-25T13:44:48.091Z\"}",
+    "devtask_execution_context:{\"task_id\":\"dt-1787665470537-b2dx\",\"attempt_number\":1,\"execution_reference\":\"dev_task_attempts:44\",\"sandbox_reference\":null}",
+    "devtask_validation:{\"task_id\":\"dt-1787665470537-b2dx\",\"attempt_number\":1,\"validation_status\":\"passed\",\"validation_reference\":\"dev_tasks.validation_result\"}",
+    "devtask_diff_evidence:{\"task_id\":\"dt-1787665470537-b2dx\",\"attempt_number\":1,\"diff_stat_sha256\":\"4bb6de180546b778e3b09fd939113d1ce5eb8129e3d84b6fbc471056481951d7\",\"scope\":\"diff_stat_only\"}",
+    "devtask_human_approval:{\"task_id\":\"dt-1787665470537-b2dx\",\"attempt_number\":1,\"actor_id\":\"1132615846\",\"approved_at\":\"2026-08-25 13:48:56\",\"approval_reference\":\"dev_tasks.approved_by\"}",
+    "devtask_outcome:{\"task_id\":\"dt-1787665470537-b2dx\",\"attempt_number\":1,\"outcome\":\"COMPLETED\",\"completed_at\":\"2026-08-25 13:48:58\",\"reference\":\"dev_tasks.state\"}"
+  ],
+  "trace_hash_chain": [
+    "d91792c6cbbbcbe2acb4c3209bff49323bc34b44e48bbe151de719e1e2abf1ab",
+    "c9b5f521f9df993e2f33455b9b4b576a3e72b86b86506931ddcdbaf3ae03573b",
+    "54fbc010220c707c0e17fb0a02483b66ff2a8c2bf238dcff560adeaf36740661",
+    "c4866b97f8a5066b907f9df23ccfe57e2af5c0cee43e555df674a9e5ca18b125",
+    "733771c8912a5c36fd347638e458ded026cd0a7b3ab5860278a518185ec9268d",
+    "ed7366fac5a525d061be7a69eae10c814526a5ee2ffe41292f1b0ccf57b8a473",
+    "7ac773613b58c7da5e6b63769d020bcee20fac094cb9b6c05ecfaf6571bdd1c2"
+  ],
+  "outcome": "verified",
+  "signature": "0IXviY6jCDtA+y2f+uoeRRED+ZSwG+4RaTFRsYjA0xOt+k1n85YoFpiirvF4Cfkys4t5nbY4Eg9HyvaFvPy/AA==",
+  "public_key": "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAezR/rSkEEJ2LBOS5hP9HLnAx/GhFkNCI9GJvy9NV6C0=\n-----END PUBLIC KEY-----\n"
+}
