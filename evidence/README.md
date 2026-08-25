@@ -21,9 +21,20 @@ listete nur 1 von 7 Tools, Footer-Link zeigte auf falschen Repo-Namen.
 | Signatur | Ed25519, Public Key im Bundle enthalten |
 
 Das Paket ([dt-1787662064400-sjiw.json](dt-1787662064400-sjiw.json)) enthaelt eine Hash-Chain ueber
-alle Ausfuehrungsschritte plus eine Ed25519-Signatur. Die Signatur laesst sich mit jeder
-Standard-Ed25519-Bibliothek gegen den im Bundle enthaltenen Public Key pruefen (z.B. Node `crypto`
-oder Python `cryptography`) -- dafuer braucht es kein ALEX-System.
+alle Ausfuehrungsschritte plus eine Ed25519-Signatur.
+
+**Selbst pruefen, ohne uns zu vertrauen:**
+
+```bash
+git clone https://github.com/bewusstki-hue/alex-mrtb-verify-bundle.git
+cd alex-mrtb-verify-bundle
+npm install
+npm run verify -- ../bewusstki-tools/evidence/dt-1787662064400-sjiw.json
+```
+
+Erwartete Ausgabe: `✅ Bundle ... verified. Capability=devtask.execution@1.0, Claim-Ladder=L2`.
+Exakte Berechnungsvorschrift (Hash-Chain-Formel, Signatur-Payload/Canonicalization) steht dort
+im README, falls jemand einen eigenen Verifier in einer anderen Sprache nachbauen will.
 
 ## Grenzen (bewusst offen benannt, nicht beschoenigt)
 
@@ -36,9 +47,6 @@ oder Python `cryptography`) -- dafuer braucht es kein ALEX-System.
   keinen Hash des tatsaechlichen Datei-Diffs. Dass der Code in [PR #1](https://github.com/bewusstki-hue/bewusstki-tools/pull/1)
   wirklich zum Auftrag passt, muss man aktuell selbst durch Lesen des Diffs pruefen, nicht allein
   aus dem Bundle ableiten.
-- **Noch kein oeffentlicher CLI-Verifier fuer genau diese Capability.** Die Capability hier ist
-  `devtask.execution@1.0`. Der unabhaengige [alex-mrtb-verify-bundle](https://github.com/bewusstki-hue/alex-mrtb-verify-bundle)-Verifier
-  deckt bisher nur sechs `memory.*`-Capabilities ab, nicht diese.
 - **Ein einzelnes Beispiel.** Zeigt, dass die Kette einmal echt durchgelaufen ist -- noch keine
   Serie inkl. eines absichtlich fehlgeschlagenen Bundles (`FAILED`), die zeigt, dass nicht jeder
   Versuch automatisch gruen wird.
