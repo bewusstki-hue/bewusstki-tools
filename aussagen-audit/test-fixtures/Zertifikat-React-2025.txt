@@ -1,0 +1,17 @@
+ZERTIFIKAT
+
+Diese Bescheinigung bestätigt, dass
+
+    Max Mustermann (Test)
+
+erfolgreich an der Fortbildung
+
+    "Advanced React Patterns & Performance"
+
+teilgenommen und die Abschlussprüfung bestanden hat.
+
+Umfang: 40 Unterrichtsstunden
+Note: 1,3
+Zertifikatsnummer: RCT-2025-00417
+
+Ausstellungsdatum: 14.09.2025

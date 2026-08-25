@@ -1,0 +1,5 @@
+Das hier ist absichtlich NICHT Teil des ursprünglichen Audits.
+
+Wird nur für Testschritt 5 (Erkennung zusätzlicher, nicht zugehöriger
+Dateien) verwendet — beim Gegenprüfen zusätzlich zu den drei echten
+Testdokumenten mit hochladen.

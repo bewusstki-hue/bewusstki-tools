@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CUT — Strangler Orchestrator</title>
+<style>
+:root{
+  --bg:#0d0f10;
+  --bg-panel:#151819;
+  --bg-panel-2:#1b1f21;
+  --line:#2a2f31;
+  --line-soft:#202426;
+  --text:#e4e6e5;
+  --text-dim:#8a9290;
+  --text-faint:#5c6462;
+  --accent:#ff8a3d;
+  --accent-dim:#7a4a26;
+  --green:#5fb87a;
+  --yellow:#d9b23c;
+  --red:#e0584f;
+  --mono:"JetBrains Mono","SF Mono",Consolas,monospace;
+  --sans:"Inter",-apple-system,"Segoe UI",sans-serif;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:var(--sans);
+  font-size:14px;
+  line-height:1.5;
+}
+::selection{background:var(--accent-dim);color:#fff;}
+
+/* ---------- Header ---------- */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 22px;
+  border-bottom:1px solid var(--line);
+  background:var(--bg-panel);
+  position:sticky;top:0;z-index:20;
+}
+.brand{display:flex;align-items:baseline;gap:10px;}
+.brand-mark{
+  font-family:var(--mono);font-weight:700;letter-spacing:.14em;
+  color:var(--accent);font-size:15px;
+}
+.brand-sub{color:var(--text-dim);font-size:12px;font-family:var(--mono);}
+.topbar-actions{display:flex;gap:8px;}
+
+button{
+  font-family:var(--sans);font-size:12.5px;font-weight:600;
+  background:var(--bg-panel-2);color:var(--text);
+  border:1px solid var(--line);border-radius:5px;
+  padding:7px 12px;cursor:pointer;
+  transition:border-color .12s, background .12s;
+}
+button:hover{border-color:#3a4042;background:#202526;}
+button.primary{background:var(--accent);color:#1a0e05;border-color:var(--accent);}
+button.primary:hover{background:#ff9a54;}
+button.ghost{background:transparent;}
+button:disabled{opacity:.35;cursor:not-allowed;}
+
+/* ---------- Layout ---------- */
+.shell{display:flex;min-height:calc(100vh - 53px);}
+.side{
+  width:280px;flex:none;
+  border-right:1px solid var(--line);
+  background:var(--bg-panel);
+  padding:18px 16px;
+  display:flex;flex-direction:column;gap:20px;
+  position:sticky;top:53px;align-self:flex-start;
+  height:calc(100vh - 53px);overflow-y:auto;
+}
+.main{flex:1;min-width:0;padding:22px 26px 60px;}
+
+.side h3{
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--text-faint);margin:0 0 10px;font-weight:700;
+}
+
+/* delta report */
+.delta-box{
+  border:1px solid var(--line);border-radius:7px;
+  padding:12px 13px;background:var(--bg-panel-2);
+  font-family:var(--mono);font-size:12px;
+}
+.delta-line{display:flex;justify-content:space-between;padding:3px 0;color:var(--text-dim);}
+.delta-line b{color:var(--text);font-weight:600;}
+.delta-line.hi b{color:var(--accent);}
+
+/* filter group */
+.filter-group{display:flex;flex-direction:column;gap:6px;}
+.chip-row{display:flex;flex-wrap:wrap;gap:6px;}
+.chip{
+  font-family:var(--mono);font-size:11px;padding:4px 9px;border-radius:20px;
+  border:1px solid var(--line);color:var(--text-dim);cursor:pointer;user-select:none;
+}
+.chip.active{border-color:var(--accent);color:var(--accent);background:rgba(255,138,61,.08);}
+.chip[data-cls="low"].active{border-color:var(--green);color:var(--green);background:rgba(95,184,122,.1);}
+.chip[data-cls="strategic"].active{border-color:var(--yellow);color:var(--yellow);background:rgba(217,178,60,.1);}
+.chip[data-cls="major"].active{border-color:var(--red);color:var(--red);background:rgba(224,88,79,.1);}
+
+input[type="text"], select, textarea{
+  width:100%;background:var(--bg);color:var(--text);
+  border:1px solid var(--line);border-radius:5px;
+  padding:7px 9px;font-family:var(--sans);font-size:12.5px;
+}
+textarea{font-family:var(--mono);font-size:11.5px;min-height:160px;resize:vertical;}
+label.small{display:block;font-size:11px;color:var(--text-faint);margin-bottom:4px;font-family:var(--mono);}
+
+/* empty state */
+.empty{
+  border:1px dashed var(--line);border-radius:10px;
+  padding:60px 40px;text-align:center;color:var(--text-dim);
+}
+.empty h2{color:var(--text);font-size:18px;margin:0 0 8px;font-weight:700;}
+.empty p{font-size:13px;max-width:520px;margin:0 auto 20px;color:var(--text-dim);}
+.empty .actions{display:flex;gap:10px;justify-content:center;}
+
+/* schema hint */
+.schema-hint{
+  font-family:var(--mono);font-size:10.5px;color:var(--text-faint);
+  background:var(--bg);border:1px solid var(--line-soft);border-radius:6px;
+  padding:10px;margin-top:10px;white-space:pre;overflow-x:auto;
+}
+
+/* summary strip */
+.summary-strip{display:flex;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+.stat{
+  border:1px solid var(--line);border-radius:8px;background:var(--bg-panel);
+  padding:10px 16px;min-width:110px;
+}
+.stat .n{font-family:var(--mono);font-size:22px;font-weight:700;color:var(--text);}
+.stat .l{font-size:10.5px;color:var(--text-faint);text-transform:uppercase;letter-spacing:.07em;margin-top:2px;}
+.stat.low .n{color:var(--green);}
+.stat.strategic .n{color:var(--yellow);}
+.stat.major .n{color:var(--red);}
+
+/* table */
+.table-wrap{border:1px solid var(--line);border-radius:9px;overflow:hidden;background:var(--bg-panel);}
+table{width:100%;border-collapse:collapse;}
+thead th{
+  text-align:left;font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;
+  color:var(--text-faint);font-weight:700;padding:10px 12px;
+  border-bottom:1px solid var(--line);background:var(--bg-panel-2);
+  cursor:pointer;white-space:nowrap;user-select:none;
+}
+thead th:hover{color:var(--text-dim);}
+thead th.sorted{color:var(--accent);}
+tbody tr{border-bottom:1px solid var(--line-soft);cursor:pointer;}
+tbody tr:hover{background:rgba(255,255,255,.02);}
+tbody tr.expanded{background:rgba(255,138,61,.04);}
+tbody td{padding:10px 12px;vertical-align:top;font-size:12.5px;}
+.cut-id{font-family:var(--mono);color:var(--text-dim);font-size:11.5px;}
+.modules-cell{font-family:var(--mono);font-size:11.5px;}
+.modules-cell .mod{color:var(--text);}
+.modules-cell .mod.plugin{color:var(--text-dim);}
+.cost-cell{font-family:var(--mono);font-size:12px;color:var(--text-dim);}
+.cost-cell b{color:var(--text);}
+
+.badge{
+  display:inline-block;font-family:var(--mono);font-size:10.5px;font-weight:700;
+  padding:2px 8px;border-radius:20px;letter-spacing:.03em;
+}
+.badge.low{color:var(--green);background:rgba(95,184,122,.12);border:1px solid rgba(95,184,122,.3);}
+.badge.strategic{color:var(--yellow);background:rgba(217,178,60,.12);border:1px solid rgba(217,178,60,.3);}
+.badge.major{color:var(--red);background:rgba(224,88,79,.12);border:1px solid rgba(224,88,79,.3);}
+
+.risk-dots{display:flex;gap:3px;align-items:center;}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--line);}
+.dot.on{background:var(--red);}
+.dot.on.r1,.dot.on.r2{background:var(--green);}
+.dot.on.r3{background:var(--yellow);}
+
+.cap-tag{
+  font-family:var(--mono);font-size:10.5px;color:var(--accent);
+  background:rgba(255,138,61,.08);border:1px solid var(--accent-dim);
+  padding:1px 7px;border-radius:4px;display:inline-block;
+}
+.cap-tag.weakens{color:var(--red);border-color:rgba(224,88,79,.4);background:rgba(224,88,79,.08);}
+
+.status-select{
+  font-family:var(--mono);font-size:11px;background:var(--bg);color:var(--text-dim);
+  border:1px solid var(--line);border-radius:4px;padding:3px 6px;
+}
+
+.meta-row td{
+  background:var(--bg);border-left:2px solid var(--text-faint);
+}
+.meta-row.low td{border-left-color:var(--green);}
+.meta-row.strategic td{border-left-color:var(--yellow);}
+.meta-row.major td{border-left-color:var(--red);}
+
+/* detail panel */
+.detail{padding:18px 20px 22px;display:grid;grid-template-columns:1.3fr 1fr;gap:22px;}
+.detail-section h4{
+  font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;
+  color:var(--text-faint);margin:0 0 9px;font-weight:700;
+}
+.edge-list{display:flex;flex-direction:column;gap:5px;}
+.edge{
+  display:flex;align-items:center;gap:8px;font-family:var(--mono);font-size:11.5px;
+  padding:6px 9px;border:1px solid var(--line-soft);border-radius:5px;background:var(--bg-panel-2);
+}
+.edge .type-tag{
+  font-size:9.5px;padding:1px 6px;border-radius:3px;text-transform:uppercase;letter-spacing:.04em;
+  font-weight:700;flex:none;
+}
+.edge .type-tag.import{color:#8ea6c9;background:rgba(142,166,201,.12);}
+.edge .type-tag.runtime_call{color:var(--red);background:rgba(224,88,79,.12);}
+.edge .type-tag.event{color:#c69be0;background:rgba(198,155,224,.12);}
+.edge .type-tag.shared_table{color:var(--yellow);background:rgba(217,178,60,.12);}
+.edge .type-tag.singleton{color:#e07ea0;background:rgba(224,126,160,.12);}
+.edge .from{color:var(--text-dim);}
+.edge .to{color:var(--text);}
+.edge .arrow{color:var(--text-faint);}
+
+.reverse-deps{font-family:var(--mono);font-size:11.5px;color:var(--text-dim);}
+.reverse-deps .none{color:var(--text-faint);font-style:italic;}
+
+.smoke-list{display:flex;flex-direction:column;gap:6px;}
+.smoke-item{display:flex;gap:8px;align-items:flex-start;font-size:12px;color:var(--text-dim);}
+.smoke-item input{margin-top:2px;}
+
+.adapter-box{
+  font-family:var(--mono);font-size:11px;background:#0a0c0c;border:1px solid var(--line);
+  border-radius:6px;padding:10px;color:#9fd3a8;white-space:pre;overflow-x:auto;
+}
+
+.notes-box textarea{min-height:70px;font-family:var(--sans);font-size:12px;}
+
+/* Kern-Hub meta group */
+.meta-group-banner{
+  border:1px solid var(--accent-dim);border-radius:8px;
+  background:linear-gradient(180deg,rgba(255,138,61,.07),rgba(255,138,61,.02));
+  padding:12px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;
+}
+.meta-group-banner .t{font-family:var(--mono);font-weight:700;color:var(--accent);font-size:12.5px;}
+.meta-group-banner .d{font-size:11.5px;color:var(--text-dim);margin-top:2px;}
+
+/* toast */
+.toast{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%);
+  background:var(--bg-panel-2);border:1px solid var(--line);color:var(--text);
+  padding:9px 16px;border-radius:7px;font-size:12.5px;box-shadow:0 8px 24px rgba(0,0,0,.4);
+  opacity:0;pointer-events:none;transition:opacity .2s, transform .2s;z-index:50;
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(-6px);}
+
+/* modal */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;
+  align-items:center;justify-content:center;z-index:60;
+}
+.modal-overlay.show{display:flex;}
+.modal{
+  width:640px;max-width:92vw;max-height:82vh;overflow-y:auto;
+  background:var(--bg-panel);border:1px solid var(--line);border-radius:10px;
+  padding:20px 22px;
+}
+.modal h3{margin-top:0;font-size:14px;}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:16px;}
+
+.footer-note{margin-top:24px;color:var(--text-faint);font-size:11px;font-family:var(--mono);}
+
+@media(max-width:900px){
+  .shell{flex-direction:column;}
+  .side{width:100%;height:auto;position:relative;top:0;}
+  .detail{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="brand">
+    <span class="brand-mark">CUT</span>
+    <span class="brand-sub">Strangler Orchestrator · ARA ↔ RMT Delta-Peeling</span>
+  </div>
+  <div class="topbar-actions">
+    <button class="ghost" id="btnLoadDemo">Demo laden</button>
+    <button class="ghost" id="btnImport">Input laden</button>
+    <button id="btnExportMd" disabled>Export .md</button>
+    <button id="btnExportJson" disabled>Export .cuts/</button>
+    <button class="primary" id="btnClear">Reset</button>
+  </div>
+</div>
+
+<div class="shell">
+  <div class="side">
+    <div>
+      <h3>Delta-Report</h3>
+      <div class="delta-box" id="deltaBox">
+        <div class="delta-line"><span>Soll-Kern (ARA)</span><b id="dSoll">—</b></div>
+        <div class="delta-line hi"><span>Offene Kanten</span><b id="dOffen">—</b></div>
+        <div class="delta-line"><span>Nach geplanten Cuts</span><b id="dNach">—</b></div>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Klasse</h3>
+      <div class="chip-row" id="clsFilter">
+        <span class="chip active" data-cls="all">Alle</span>
+        <span class="chip" data-cls="low">Low-Hanging</span>
+        <span class="chip" data-cls="strategic">Strategic</span>
+        <span class="chip" data-cls="major">Major</span>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Status</h3>
+      <div class="chip-row" id="statFilter">
+        <span class="chip active" data-stat="all">Alle</span>
+        <span class="chip" data-stat="todo">Todo</span>
+        <span class="chip" data-stat="progress">In Arbeit</span>
+        <span class="chip" data-stat="done">Erledigt</span>
+      </div>
+    </div>
+
+    <div class="filter-group">
+      <h3>Suche</h3>
+      <input type="text" id="searchBox" placeholder="Modul, Capability, Cut-ID…">
+    </div>
+
+    <div class="filter-group">
+      <h3>Boundary-Typ</h3>
+      <div class="chip-row" id="typeFilter">
+        <span class="chip active" data-t="all">Alle</span>
+        <span class="chip" data-t="import">import</span>
+        <span class="chip" data-t="runtime_call">runtime</span>
+        <span class="chip" data-t="event">event</span>
+        <span class="chip" data-t="shared_table">table</span>
+        <span class="chip" data-t="singleton">singleton</span>
+      </div>
+    </div>
+
+    <div style="margin-top:auto;font-size:10.5px;color:var(--text-faint);font-family:var(--mono);line-height:1.6;">
+      Fortschritt wird lokal gespeichert (localStorage).<br>
+      Input: RMT-Graph + ARA-Klassifikation.
+    </div>
+  </div>
+
+  <div class="main">
+    <div id="emptyState" class="empty">
+      <h2>Kein Input geladen</h2>
+      <p>CUT braucht deinen RMT-Graph (Module, Kanten, Cluster) und die ARA-Klassifikation (CORE / SUPPORT / PLUGIN + Capability-Map). Lade dein JSON oder starte mit der Demo, um das erwartete Schema zu sehen.</p>
+      <div class="actions">
+        <button class="primary" id="btnLoadDemo2">Demo laden</button>
+        <button id="btnImport2">Eigenes JSON laden</button>
+      </div>
+      <div class="schema-hint" id="schemaHint"></div>
+    </div>
+
+    <div id="appView" style="display:none;">
+      <div class="meta-group-banner" id="metaBanner" style="display:none;">
+        <div>
+          <div class="t">CUT-CORE-HUB-BOUNDARY — Meta-Cut</div>
+          <div class="d" id="metaBannerDesc"></div>
+        </div>
+        <button id="btnFocusMeta">Nur diese Gruppe</button>
+      </div>
+
+      <div class="summary-strip" id="summaryStrip"></div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="id">Cut-ID</th>
+              <th data-sort="modules">Betroffene Module</th>
+              <th data-sort="cost">Kosten (I/T/E)</th>
+              <th data-sort="risk">Risiko</th>
+              <th data-sort="cap">Capability</th>
+              <th data-sort="cls">Klasse</th>
+              <th data-sort="status">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+
+      <div class="footer-note" id="footerNote"></div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <h3>RMT + ARA Input laden</h3>
+    <label class="small">JSON einfügen</label>
+    <textarea id="importText" placeholder='{"modules":[...],"edges":[...],"capabilities":[...]}'></textarea>
+    <div class="modal-footer">
+      <button class="ghost" id="btnImportCancel">Abbrechen</button>
+      <button class="primary" id="btnImportConfirm">Laden</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===================== STATE ===================== */
+let RAW = null;          // parsed input {modules, edges, capabilities}
+let CUTS = [];           // computed cut objects
+let sortKey = 'risk', sortDir = 'desc';
+let filters = { cls:'all', stat:'all', type:'all', q:'' };
+let expandedId = null;
+let statusMap = {};      // cutId -> status, persisted
+let notesMap = {};       // cutId -> notes
+
+const STORAGE_KEY = 'cutplanner_state_v1';
+
+const CAPABILITIES_V01 = [
+  'task_contract','execution','memory','governance','identity',
+  'telemetry','communication','safety','value_signal'
+];
+const CRITICAL_CAPS = ['task_contract','execution'];
+
+/* ===================== BOUNDARY WEIGHTS ===================== */
+const TYPE_WEIGHT = { import:1, runtime_call:4, event:3, shared_table:3, singleton:5 };
+
+/* ===================== DEMO DATA ===================== */
+const DEMO = {
+  modules: [
+    {id:'orderService', cluster:'CORE', capabilities:['execution','task_contract']},
+    {id:'contractEngine', cluster:'CORE', capabilities:['task_contract']},
+    {id:'eventBus', cluster:'CORE', capabilities:['communication']},
+    {id:'recordStore', cluster:'CORE', capabilities:['memory']},
+    {id:'policyGuard', cluster:'SUPPORT', capabilities:['safety']},
+    {id:'metricsCollector', cluster:'SUPPORT', capabilities:['telemetry']},
+    {id:'socialPoster', cluster:'PLUGIN', capabilities:[]},
+    {id:'peerCrawler', cluster:'PLUGIN', capabilities:[]},
+    {id:'diaryWriter', cluster:'PLUGIN', capabilities:[]},
+    {id:'billingConnector', cluster:'PLUGIN', capabilities:[]},
+    {id:'chatGateway', cluster:'PLUGIN', capabilities:[]},
+    {id:'sandboxArena', cluster:'PLUGIN', capabilities:[]},
+    {id:'graphSync', cluster:'PLUGIN', capabilities:[]},
+  ],
+  edges: [
+    {from:'orderService', to:'socialPoster', type:'runtime_call'},
+    {from:'orderService', to:'peerCrawler', type:'runtime_call'},
+    {from:'orderService', to:'diaryWriter', type:'runtime_call'},
+    {from:'orderService', to:'billingConnector', type:'event'},
+    {from:'orderService', to:'chatGateway', type:'runtime_call'},
+    {from:'orderService', to:'sandboxArena', type:'import'},
+    {from:'orderService', to:'graphSync', type:'shared_table'},
+    {from:'contractEngine', to:'socialPoster', type:'import'},
+    {from:'eventBus', to:'billingConnector', type:'event'},
+    {from:'eventBus', to:'chatGateway', type:'event'},
+    {from:'recordStore', to:'graphSync', type:'shared_table'},
+    {from:'recordStore', to:'peerCrawler', type:'shared_table'},
+    {from:'policyGuard', to:'socialPoster', type:'import'},
+    {from:'socialPoster', to:'metricsCollector', type:'singleton'},
+    {from:'peerCrawler', to:'metricsCollector', type:'singleton'},
+    {from:'sandboxArena', to:'billingConnector', type:'import'},
+  ]
+};
+
+/* ===================== PERSISTENCE ===================== */
+function saveProgress(){
+  try{
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({statusMap, notesMap}));
+  }catch(e){}
+}
+function loadProgress(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw){
+      const d = JSON.parse(raw);
+      statusMap = d.statusMap || {};
+      notesMap = d.notesMap || {};
+    }
+  }catch(e){}
+}
+
+/* ===================== CORE COMPUTATION ===================== */
+function computeCuts(data){
+  const { modules, edges } = data;
+  const modById = {};
+  modules.forEach(m => modById[m.id] = m);
+
+  // group edges by target PLUGIN module (the thing to be cut)
+  const pluginModules = modules.filter(m => m.cluster === 'PLUGIN');
+  const nonPluginModules = modules.filter(m => m.cluster !== 'PLUGIN');
+
+  // reverse-dependency index
+  const importersOf = {};
+  edges.forEach(e => {
+    if(!importersOf[e.to]) importersOf[e.to] = [];
+    importersOf[e.to].push(e.from);
+  });
+
+  const cuts = [];
+  let counter = 1;
+  const dateStr = new Date().toISOString().slice(0,10);
+
+  // Kern-Hub automatisch erkennen: das CORE-Modul mit den meisten Kanten zu PLUGIN-Modulen
+  // (statt einen Modulnamen fest zu verdrahten -- funktioniert so fuer jede Codebase).
+  const coreEdgeCounts = {};
+  edges.forEach(e => {
+    const fromMod = modById[e.from], toMod = modById[e.to];
+    if(fromMod && fromMod.cluster !== 'PLUGIN' && toMod && toMod.cluster === 'PLUGIN'){
+      coreEdgeCounts[e.from] = (coreEdgeCounts[e.from]||0) + 1;
+    }
+    if(toMod && toMod.cluster !== 'PLUGIN' && fromMod && fromMod.cluster === 'PLUGIN'){
+      coreEdgeCounts[e.to] = (coreEdgeCounts[e.to]||0) + 1;
+    }
+  });
+  const coreHub = Object.entries(coreEdgeCounts).sort((a,b) => b[1]-a[1])[0];
+  const coreHubId = coreHub ? coreHub[0] : null;
+
+  pluginModules.forEach(pm => {
+    const outEdges = edges.filter(e => e.to === pm.id || e.from === pm.id);
+    if(outEdges.length === 0) return; // dead already, skip (could be zombie-flagged)
+
+    const imports = outEdges.filter(e => e.type === 'import').length;
+    const tables = outEdges.filter(e => e.type === 'shared_table').length;
+    const events = outEdges.filter(e => e.type === 'event').length;
+    const runtimeCalls = outEdges.filter(e => e.type === 'runtime_call').length;
+    const singletons = outEdges.filter(e => e.type === 'singleton').length;
+
+    const weighted = outEdges.reduce((s,e) => s + (TYPE_WEIGHT[e.type]||1), 0);
+    const edgeCount = outEdges.length;
+
+    // capability guard: does any CORE module reaching this plugin depend on
+    // capabilities that would be weakened if this boundary breaks?
+    const touchedCoreCaps = new Set();
+    outEdges.forEach(e => {
+      const other = modById[e.from === pm.id ? e.to : e.from];
+      if(other && other.cluster !== 'PLUGIN' && other.capabilities){
+        other.capabilities.forEach(c => touchedCoreCaps.add(c));
+      }
+    });
+    const weakensCritical = [...touchedCoreCaps].some(c => CRITICAL_CAPS.includes(c))
+      && (runtimeCalls > 0 || events > 0);
+
+    // classification
+    let cls;
+    if(weakensCritical){
+      cls = 'major';
+    } else if(edgeCount <= 3 && events === 0 && runtimeCalls === 0){
+      cls = 'low';
+    } else if(edgeCount <= 8){
+      cls = 'strategic';
+    } else {
+      cls = 'major';
+    }
+
+    // risk score 1-5
+    let risk = 1;
+    risk += Math.min(2, tables); // data migration weight
+    risk += (events > 0 || runtimeCalls > 0) ? 1 : 0;
+    risk += singletons > 0 ? 1 : 0;
+    risk = Math.max(1, Math.min(5, risk));
+
+    // reverse deps: who else imports this plugin (besides itself outgoing)
+    const reverseDeps = (importersOf[pm.id] || []).filter(x => x !== pm.id);
+
+    const isCoreHubEdge = coreHubId && outEdges.some(e => e.from === coreHubId || e.to === coreHubId);
+
+    const id = `CUT-${dateStr}-${String(counter).padStart(3,'0')}`;
+    counter++;
+
+    cuts.push({
+      id,
+      modules: [pm.id],
+      touchedModules: [...new Set(outEdges.flatMap(e => [e.from,e.to]))],
+      edges: outEdges,
+      cost: { imports, tables, events, runtimeCalls, singletons, weighted, edgeCount },
+      risk,
+      capabilities: [...touchedCoreCaps],
+      weakensCritical,
+      cls,
+      reverseDeps,
+      metaGroup: isCoreHubEdge ? 'CUT-CORE-HUB-BOUNDARY' : null,
+      status: statusMap[id] || 'todo',
+    });
+  });
+
+  // sort default by weighted cost ascending (cheapest first) then risk
+  cuts.sort((a,b) => a.cost.weighted - b.cost.weighted);
+
+  return cuts;
+}
+
+function smokeChecklist(cut){
+  const items = [];
+  items.push('Adapter kompiliert ohne Fehler');
+  if(cut.cost.imports > 0) items.push('Keine broken imports im Rest-CORE');
+  if(cut.cost.events > 0) items.push(`Events (${cut.cost.events}) werden weiter published/subscribed`);
+  if(cut.cost.tables > 0) items.push(`Tabellen (${cut.cost.tables}) nur noch über Adapter erreichbar`);
+  if(cut.metaGroup) items.push('Kern-Hub startet ohne dieses Plugin (oder mit Mock)');
+  items.push('Reverse-Dependency-Check erneut ausgeführt: keine neuen Treffer');
+  return items;
+}
+
+function adapterSketch(cut){
+  const mod = cut.modules[0];
+  const caps = cut.capabilities.length ? cut.capabilities.join(', ') : '—';
+  return `interface ${mod}Adapter {
+  // Boundary-Cut ${cut.id}
+  // ersetzt ${cut.cost.edgeCount} direkte Kanten
+  // betrifft Capabilities: ${caps}
+${cut.edges.map(e => `  // ${e.type}: ${e.from} → ${e.to}`).join('\n')}
+  invoke(payload: unknown): Promise<unknown>;
+}`;
+}
+
+/* ===================== RENDER ===================== */
+function fmtCls(c){
+  return c === 'low' ? 'Low-Hanging' : c === 'strategic' ? 'Strategic' : 'Major Surgery';
+}
+
+function applyFilters(list){
+  return list.filter(c => {
+    if(filters.cls !== 'all' && c.cls !== filters.cls) return false;
+    if(filters.stat !== 'all' && c.status !== filters.stat) return false;
+    if(filters.type !== 'all' && !c.edges.some(e => e.type === filters.type)) return false;
+    if(filters.q){
+      const q = filters.q.toLowerCase();
+      const hay = (c.id + ' ' + c.modules.join(' ') + ' ' + c.capabilities.join(' ')).toLowerCase();
+      if(!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+function sortCuts(list){
+  const dir = sortDir === 'asc' ? 1 : -1;
+  return [...list].sort((a,b) => {
+    let av, bv;
+    switch(sortKey){
+      case 'id': av=a.id; bv=b.id; break;
+      case 'modules': av=a.modules.join(); bv=b.modules.join(); break;
+      case 'cost': av=a.cost.weighted; bv=b.cost.weighted; break;
+      case 'risk': av=a.risk; bv=b.risk; break;
+      case 'cap': av=a.capabilities.join(); bv=b.capabilities.join(); break;
+      case 'cls': av=a.cls; bv=b.cls; break;
+      case 'status': av=a.status; bv=b.status; break;
+      default: av=a.cost.weighted; bv=b.cost.weighted;
+    }
+    if(av < bv) return -1*dir;
+    if(av > bv) return 1*dir;
+    return 0;
+  });
+}
+
+function renderSummary(){
+  const total = CUTS.length;
+  const low = CUTS.filter(c=>c.cls==='low').length;
+  const strategic = CUTS.filter(c=>c.cls==='strategic').length;
+  const major = CUTS.filter(c=>c.cls==='major').length;
+  const done = CUTS.filter(c=>c.status==='done').length;
+
+  const strip = document.getElementById('summaryStrip');
+  strip.innerHTML = `
+    <div class="stat"><div class="n">${total}</div><div class="l">Cuts gesamt</div></div>
+    <div class="stat low"><div class="n">${low}</div><div class="l">Low-Hanging</div></div>
+    <div class="stat strategic"><div class="n">${strategic}</div><div class="l">Strategic</div></div>
+    <div class="stat major"><div class="n">${major}</div><div class="l">Major Surgery</div></div>
+    <div class="stat"><div class="n">${done}/${total}</div><div class="l">Erledigt</div></div>
+  `;
+}
+
+function renderDelta(){
+  const soll = RAW.modules.filter(m => m.cluster !== 'PLUGIN').length;
+  const offen = CUTS.reduce((s,c) => s + c.cost.edgeCount, 0);
+  const remainingEdges = CUTS.filter(c => c.status !== 'done').reduce((s,c)=>s+c.cost.edgeCount,0);
+  document.getElementById('dSoll').textContent = `${soll} Module`;
+  document.getElementById('dOffen').textContent = `${offen} Kanten (${CUTS.length} Cuts)`;
+  document.getElementById('dNach').textContent = `${remainingEdges} Kanten offen`;
+}
+
+function renderMetaBanner(){
+  const metaCuts = CUTS.filter(c => c.metaGroup);
+  const banner = document.getElementById('metaBanner');
+  if(metaCuts.length === 0){ banner.style.display='none'; return; }
+  banner.style.display = 'flex';
+  const totalEdges = metaCuts.reduce((s,c)=>s+c.cost.edgeCount,0);
+  document.getElementById('metaBannerDesc').textContent =
+    `${metaCuts.length} Unter-Cuts, ${totalEdges} Kanten aus dem Kern-Hub — priorisiert nach Häufigkeit, Sync-Verhalten und Capability-Kritikalität.`;
+}
+
+function renderTable(){
+  const filtered = applyFilters(CUTS);
+  const sorted = sortCuts(filtered);
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  if(sorted.length === 0){
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-faint);">Keine Cuts für diesen Filter.</td></tr>`;
+    return;
+  }
+
+  sorted.forEach(cut => {
+    const tr = document.createElement('tr');
+    tr.dataset.id = cut.id;
+    if(cut.id === expandedId) tr.classList.add('expanded');
+
+    const capHtml = cut.capabilities.length
+      ? cut.capabilities.map(c => `<span class="cap-tag ${cut.weakensCritical && CRITICAL_CAPS.includes(c)?'weakens':''}">${c}</span>`).join(' ')
+      : '<span style="color:var(--text-faint);font-family:var(--mono);font-size:11px;">—</span>';
+
+    const riskDots = [1,2,3,4,5].map(i => {
+      const on = i <= cut.risk;
+      const cls = i<=2?'r1':i===3?'r3':'r5';
+      return `<span class="dot ${on?'on '+cls:''}"></span>`;
+    }).join('');
+
+    tr.innerHTML = `
+      <td class="cut-id">${cut.id}${cut.metaGroup ? '<br><span style="color:var(--accent);font-size:10px;">↳ Kern-Hub</span>' : ''}</td>
+      <td class="modules-cell">${cut.modules.map(m=>`<span class="mod">${m}</span>`).join(', ')}</td>
+      <td class="cost-cell"><b>${cut.cost.imports}</b>/<b>${cut.cost.tables}</b>/<b>${cut.cost.events}</b>${cut.cost.runtimeCalls?` <span style="color:var(--red);">+${cut.cost.runtimeCalls} rt</span>`:''}</td>
+      <td><div class="risk-dots">${riskDots}<span style="margin-left:6px;color:var(--text-faint);font-family:var(--mono);font-size:11px;">${cut.risk}</span></div></td>
+      <td>${capHtml}</td>
+      <td><span class="badge ${cut.cls}">${fmtCls(cut.cls)}</span></td>
+      <td>
+        <select class="status-select" data-id="${cut.id}">
+          <option value="todo" ${cut.status==='todo'?'selected':''}>Todo</option>
+          <option value="progress" ${cut.status==='progress'?'selected':''}>In Arbeit</option>
+          <option value="done" ${cut.status==='done'?'selected':''}>Erledigt</option>
+        </select>
+      </td>
+    `;
+    tbody.appendChild(tr);
+
+    if(cut.id === expandedId){
+      const metaTr = document.createElement('tr');
+      metaTr.className = `meta-row ${cut.cls}`;
+      const td = document.createElement('td');
+      td.colSpan = 7;
+      td.appendChild(buildDetail(cut));
+      metaTr.appendChild(td);
+      tbody.appendChild(metaTr);
+    }
+  });
+
+  // bind row clicks
+  tbody.querySelectorAll('tr[data-id]').forEach(row => {
+    row.addEventListener('click', (e) => {
+      if(e.target.tagName === 'SELECT') return;
+      const id = row.dataset.id;
+      expandedId = expandedId === id ? null : id;
+      renderTable();
+    });
+  });
+  tbody.querySelectorAll('.status-select').forEach(sel => {
+    sel.addEventListener('click', e => e.stopPropagation());
+    sel.addEventListener('change', e => {
+      const id = e.target.dataset.id;
+      const cut = CUTS.find(c => c.id === id);
+      cut.status = e.target.value;
+      statusMap[id] = e.target.value;
+      saveProgress();
+      renderSummary();
+      renderDelta();
+      showToast(`${id} → ${e.target.value}`);
+    });
+  });
+}
+
+function buildDetail(cut){
+  const wrap = document.createElement('div');
+  wrap.className = 'detail';
+
+  const edgesHtml = cut.edges.map(e => `
+    <div class="edge">
+      <span class="type-tag ${e.type}">${e.type}</span>
+      <span class="from">${e.from}</span><span class="arrow">→</span><span class="to">${e.to}</span>
+    </div>
+  `).join('');
+
+  const revDepsHtml = cut.reverseDeps.length
+    ? cut.reverseDeps.map(d => `<div>${d}</div>`).join('')
+    : `<span class="none">Keine weiteren Importer gefunden — sauberer Cut.</span>`;
+
+  const smoke = smokeChecklist(cut);
+  const smokeHtml = smoke.map((s,i) => `
+    <label class="smoke-item"><input type="checkbox" data-smoke="${cut.id}-${i}" ${loadSmoke(cut.id,i)?'checked':''}> ${s}</label>
+  `).join('');
+
+  wrap.innerHTML = `
+    <div>
+      <div class="detail-section">
+        <h4>Kantenliste (${cut.edges.length})</h4>
+        <div class="edge-list">${edgesHtml}</div>
+      </div>
+      <div class="detail-section" style="margin-top:16px;">
+        <h4>Reverse-Dependency-Check</h4>
+        <div class="reverse-deps">${revDepsHtml}</div>
+      </div>
+      <div class="detail-section" style="margin-top:16px;">
+        <h4>Notizen</h4>
+        <div class="notes-box"><textarea data-notes="${cut.id}" placeholder="Rollback-Plan, Feature-Toggle, Beobachtungen…">${notesMap[cut.id]||''}</textarea></div>
+      </div>
+    </div>
+    <div>
+      <div class="detail-section">
+        <h4>Adapter-Interface-Skizze</h4>
+        <div class="adapter-box">${adapterSketch(cut)}</div>
+      </div>
+      <div class="detail-section" style="margin-top:16px;">
+        <h4>Smoke-Contract</h4>
+        <div class="smoke-list">${smokeHtml}</div>
+      </div>
+    </div>
+  `;
+
+  wrap.querySelector(`textarea[data-notes]`).addEventListener('input', e => {
+    notesMap[cut.id] = e.target.value;
+    saveProgress();
+  });
+  wrap.querySelectorAll('input[data-smoke]').forEach(cb => {
+    cb.addEventListener('change', e => {
+      saveSmoke(e.target.dataset.smoke, e.target.checked);
+    });
+  });
+
+  return wrap;
+}
+
+function saveSmoke(key, val){
+  const smokeState = JSON.parse(localStorage.getItem('cutplanner_smoke_v1')||'{}');
+  smokeState[key] = val;
+  localStorage.setItem('cutplanner_smoke_v1', JSON.stringify(smokeState));
+}
+function loadSmoke(id,i){
+  const smokeState = JSON.parse(localStorage.getItem('cutplanner_smoke_v1')||'{}');
+  return !!smokeState[`${id}-${i}`];
+}
+
+/* ===================== EXPORT ===================== */
+function exportMarkdown(){
+  let md = `# CUT — Boundary-Peeling Roadmap\n\n`;
+  md += `Generiert: ${new Date().toISOString()}\n\n`;
+  md += `## Delta-Report\n\n`;
+  const soll = RAW.modules.filter(m => m.cluster !== 'PLUGIN').length;
+  const offen = CUTS.reduce((s,c) => s + c.cost.edgeCount, 0);
+  md += `- Soll-Kern (ARA): ${soll} Module\n`;
+  md += `- Ist-Verdrahtung: ${soll} + ${offen} offene PLUGIN-Kanten\n\n`;
+  md += `## Cuts\n\n`;
+  md += `| Cut-ID | Module | Kosten (I/T/E) | Risiko | Capability | Klasse | Status |\n`;
+  md += `|---|---|---|---|---|---|---|\n`;
+  sortCuts(CUTS).forEach(c => {
+    md += `| ${c.id} | ${c.modules.join(', ')} | ${c.cost.imports}/${c.cost.tables}/${c.cost.events} | ${c.risk} | ${c.capabilities.join(', ')||'—'} | ${fmtCls(c.cls)} | ${c.status} |\n`;
+  });
+  md += `\n## Details\n\n`;
+  sortCuts(CUTS).forEach(c => {
+    md += `### ${c.id} — ${c.modules.join(', ')}\n\n`;
+    md += `**Klasse:** ${fmtCls(c.cls)} · **Risiko:** ${c.risk}/5 · **Status:** ${c.status}\n\n`;
+    md += `**Kanten:**\n`;
+    c.edges.forEach(e => md += `- \`${e.type}\`: ${e.from} → ${e.to}\n`);
+    md += `\n**Reverse-Deps:** ${c.reverseDeps.length ? c.reverseDeps.join(', ') : 'keine'}\n\n`;
+    md += `**Smoke-Contract:**\n`;
+    smokeChecklist(c).forEach(s => md += `- [ ] ${s}\n`);
+    if(notesMap[c.id]) md += `\n**Notizen:** ${notesMap[c.id]}\n`;
+    md += `\n---\n\n`;
+  });
+  downloadFile('cut-roadmap.md', md, 'text/markdown');
+}
+
+function exportJson(){
+  const out = {
+    generatedAt: new Date().toISOString(),
+    delta: {
+      sollKern: RAW.modules.filter(m => m.cluster !== 'PLUGIN').length,
+      offeneKanten: CUTS.reduce((s,c) => s + c.cost.edgeCount, 0),
+    },
+    cuts: CUTS.map(c => ({
+      id: c.id,
+      modules: c.modules,
+      cost: c.cost,
+      risk: c.risk,
+      capabilities: c.capabilities,
+      weakensCritical: c.weakensCritical,
+      classification: c.cls,
+      reverseDeps: c.reverseDeps,
+      metaGroup: c.metaGroup,
+      status: c.status,
+      notes: notesMap[c.id] || '',
+      edges: c.edges,
+    })),
+  };
+  downloadFile('cuts-export.json', JSON.stringify(out, null, 2), 'application/json');
+}
+
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], {type: mime});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast(`${filename} exportiert`);
+}
+
+/* ===================== UI WIRING ===================== */
+function showToast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function loadData(data){
+  RAW = data;
+  loadProgress();
+  CUTS = computeCuts(data);
+  document.getElementById('emptyState').style.display = 'none';
+  document.getElementById('appView').style.display = 'block';
+  document.getElementById('btnExportMd').disabled = false;
+  document.getElementById('btnExportJson').disabled = false;
+  const zombieCount = data.modules.filter(m => m.cluster==='PLUGIN' &&
+    !data.edges.some(e => e.from===m.id || e.to===m.id)).length;
+  document.getElementById('footerNote').textContent = zombieCount > 0
+    ? `${zombieCount} PLUGIN-Modul(e) ohne jede Kante gefunden — vermutlich Zombie-Code, nicht als Cut geführt (kein Boundary-Aufwand).`
+    : `${CUTS.length} Cuts berechnet aus ${data.modules.length} Modulen, ${data.edges.length} Kanten.`;
+  renderSummary();
+  renderDelta();
+  renderMetaBanner();
+  renderTable();
+}
+
+document.getElementById('schemaHint').textContent =
+`{
+  "modules": [
+    { "id": "orderService", "cluster": "CORE", "capabilities": ["execution","task_contract"] },
+    { "id": "socialPoster", "cluster": "PLUGIN", "capabilities": [] }
+  ],
+  "edges": [
+    { "from": "orderService", "to": "socialPoster", "type": "runtime_call" }
+    // type: import | runtime_call | event | shared_table | singleton
+  ]
+}`;
+
+document.querySelectorAll('#btnLoadDemo, #btnLoadDemo2').forEach(b => b.addEventListener('click', () => loadData(DEMO)));
+
+function openImport(){ document.getElementById('importModal').classList.add('show'); }
+function closeImport(){ document.getElementById('importModal').classList.remove('show'); }
+document.querySelectorAll('#btnImport, #btnImport2').forEach(b => b.addEventListener('click', openImport));
+document.getElementById('btnImportCancel').addEventListener('click', closeImport);
+document.getElementById('btnImportConfirm').addEventListener('click', () => {
+  const txt = document.getElementById('importText').value.trim();
+  if(!txt){ showToast('Kein Input eingefügt'); return; }
+  try{
+    const parsed = JSON.parse(txt);
+    if(!parsed.modules || !parsed.edges){ showToast('Schema unvollständig: modules/edges fehlen'); return; }
+    loadData(parsed);
+    closeImport();
+  }catch(e){
+    showToast('JSON-Parse-Fehler: ' + e.message);
+  }
+});
+
+document.getElementById('btnClear').addEventListener('click', () => {
+  if(!confirm('Alles zurücksetzen? (Gespeicherter Fortschritt bleibt erhalten, nur die Ansicht wird geleert)')) return;
+  RAW = null; CUTS = []; expandedId = null;
+  document.getElementById('emptyState').style.display = 'block';
+  document.getElementById('appView').style.display = 'none';
+  document.getElementById('btnExportMd').disabled = true;
+  document.getElementById('btnExportJson').disabled = true;
+});
+
+document.getElementById('btnExportMd').addEventListener('click', exportMarkdown);
+document.getElementById('btnExportJson').addEventListener('click', exportJson);
+document.getElementById('btnFocusMeta').addEventListener('click', () => {
+  filters.type = 'runtime_call';
+  document.querySelectorAll('#typeFilter .chip').forEach(c => c.classList.toggle('active', c.dataset.t==='runtime_call'));
+  renderTable();
+});
+
+document.querySelectorAll('#clsFilter .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    filters.cls = chip.dataset.cls;
+    document.querySelectorAll('#clsFilter .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    renderTable();
+  });
+});
+document.querySelectorAll('#statFilter .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    filters.stat = chip.dataset.stat;
+    document.querySelectorAll('#statFilter .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    renderTable();
+  });
+});
+document.querySelectorAll('#typeFilter .chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    filters.type = chip.dataset.t;
+    document.querySelectorAll('#typeFilter .chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    renderTable();
+  });
+});
+document.getElementById('searchBox').addEventListener('input', e => {
+  filters.q = e.target.value;
+  renderTable();
+});
+
+document.querySelectorAll('thead th[data-sort]').forEach(th => {
+  th.addEventListener('click', () => {
+    const key = th.dataset.sort;
+    if(sortKey === key){ sortDir = sortDir === 'asc' ? 'desc' : 'asc'; }
+    else { sortKey = key; sortDir = 'asc'; }
+    document.querySelectorAll('thead th').forEach(t => t.classList.remove('sorted'));
+    th.classList.add('sorted');
+    renderTable();
+  });
+});
+
+loadProgress();
+</script>
+</body>
+</html>

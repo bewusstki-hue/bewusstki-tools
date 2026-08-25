@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Architektur-Chronist</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&family=Special+Elite&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#16140F;
+    --ink-2:#1E1B15;
+    --ink-3:#252017;
+    --bone:#EDE6D6;
+    --bone-dim:#B0A890;
+    --amber:#B8823E;
+    --amber-dim:#8A6530;
+    --teal:#4A8B87;
+    --crisis:#9C3B2E;
+    --vital:#6B8F5C;
+    --border:#3A361F;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  @media (prefers-reduced-motion: reduce){
+    *{animation-duration:0.001ms !important; transition-duration:0.001ms !important;}
+  }
+  html,body{
+    background:var(--ink);
+    color:var(--bone);
+    margin:0;
+    font-family:'IBM Plex Sans', sans-serif;
+    line-height:1.55;
+  }
+  .wrap{max-width:1180px; margin:0 auto; padding:40px 24px 100px;}
+
+  /* ---------- Hero ---------- */
+  .hero{
+    border-bottom:1px solid var(--border);
+    padding-bottom:32px;
+    margin-bottom:36px;
+  }
+  .eyebrow{
+    font-family:'Special Elite', monospace;
+    font-size:12px;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    color:var(--amber);
+    margin:0 0 10px;
+  }
+  h1{
+    font-family:'Fraunces', serif;
+    font-optical-sizing:auto;
+    font-weight:700;
+    font-size:clamp(32px, 5vw, 52px);
+    margin:0 0 12px;
+    letter-spacing:-.01em;
+  }
+  .sub{
+    color:var(--bone-dim);
+    max-width:640px;
+    font-size:15.5px;
+    margin:0;
+  }
+
+  /* ---------- Input panel ---------- */
+  .panel{
+    background:var(--ink-2);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:24px;
+    margin-bottom:40px;
+  }
+  .panel h2{
+    font-family:'Special Elite', monospace;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--teal);
+    margin:0 0 18px;
+  }
+  .field-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:18px;
+  }
+  @media (max-width:760px){ .field-grid{grid-template-columns:1fr;} }
+  .field label{
+    display:block;
+    font-size:12.5px;
+    color:var(--bone-dim);
+    margin-bottom:6px;
+  }
+  .field label .req{color:var(--amber);}
+  .field textarea{
+    width:100%;
+    min-height:110px;
+    background:var(--ink);
+    color:var(--bone);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:10px 12px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12.5px;
+    resize:vertical;
+  }
+  .field textarea:focus, button:focus-visible, .tone-toggle button:focus-visible{
+    outline:2px solid var(--teal);
+    outline-offset:1px;
+  }
+  .field .hint{font-size:11px; color:var(--bone-dim); margin-top:5px; opacity:.75;}
+
+  .controls-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-top:22px;
+    flex-wrap:wrap;
+    gap:14px;
+  }
+  .tone-toggle{display:flex; border:1px solid var(--border); border-radius:var(--radius); overflow:hidden;}
+  .tone-toggle button{
+    background:var(--ink);
+    color:var(--bone-dim);
+    border:none;
+    padding:9px 14px;
+    font-size:12.5px;
+    font-family:'IBM Plex Sans', sans-serif;
+    cursor:pointer;
+  }
+  .tone-toggle button.active{background:var(--amber-dim); color:var(--ink); font-weight:600;}
+
+  .btn-primary{
+    background:var(--amber);
+    color:var(--ink);
+    border:none;
+    padding:12px 22px;
+    font-weight:600;
+    font-size:14px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    font-family:'IBM Plex Sans', sans-serif;
+  }
+  .btn-primary:hover{background:#c98f47;}
+  .btn-primary:disabled{opacity:.5; cursor:progress;}
+
+  .status-line{font-size:12.5px; color:var(--bone-dim); margin-top:10px; min-height:16px;}
+
+  /* ---------- Strata / Vitalwerte ---------- */
+  .strata-section{margin:8px 0 48px;}
+  .strata-section h2{
+    font-family:'Special Elite', monospace;
+    font-size:13px;
+    text-transform:uppercase;
+    letter-spacing:.1em;
+    color:var(--teal);
+    margin:0 0 4px;
+  }
+  .strata-note{font-size:12px; color:var(--bone-dim); margin:0 0 14px; opacity:.8;}
+  .strata-svg-wrap{
+    background:var(--ink-2);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:12px 8px 6px;
+    overflow-x:auto;
+  }
+  .strata-svg-wrap svg{display:block;}
+  .stratum{cursor:pointer;}
+  .stratum:hover rect.band{filter:brightness(1.18);}
+  .stratum-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:9.5px;
+    fill:var(--ink);
+    pointer-events:none;
+  }
+  .vital-dot{cursor:pointer;}
+
+  /* ---------- Epoch cards ---------- */
+  .epoch-card{
+    border:1px solid var(--border);
+    border-left:3px solid var(--amber);
+    background:var(--ink-2);
+    border-radius:var(--radius);
+    padding:26px 28px;
+    margin-bottom:24px;
+    scroll-margin-top:24px;
+  }
+  .epoch-card.crisis{border-left-color:var(--crisis);}
+  .epoch-meta{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+    color:var(--bone-dim);
+    display:flex;
+    gap:16px;
+    flex-wrap:wrap;
+    margin-bottom:10px;
+  }
+  .epoch-title{
+    font-family:'Fraunces', serif;
+    font-weight:600;
+    font-size:26px;
+    margin:0 0 14px;
+  }
+  .epoch-story{font-size:15px; color:var(--bone); margin:0 0 16px; white-space:pre-wrap;}
+  .badge{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10.5px;
+    text-transform:uppercase;
+    letter-spacing:.05em;
+    padding:3px 7px;
+    border-radius:2px;
+    margin-right:6px;
+  }
+  .badge.crisis{background:rgba(156,59,46,.25); color:#e08a7c;}
+  .badge.ghost{background:rgba(74,139,135,.22); color:#8fd3ce;}
+  .badge.bus{background:rgba(184,130,62,.22); color:#e0b077;}
+
+  .causal-box{
+    border:1px dashed var(--border);
+    padding:12px 14px;
+    font-size:13px;
+    color:var(--bone-dim);
+    margin:14px 0;
+    border-radius:var(--radius);
+  }
+  .causal-box strong{color:var(--teal); display:block; font-size:11px; text-transform:uppercase; letter-spacing:.08em; margin-bottom:6px; font-family:'Special Elite', monospace;}
+
+  .quotes-row{display:flex; flex-wrap:wrap; gap:8px; margin:14px 0;}
+  .quote-tag{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    background:var(--ink-3);
+    border:1px solid var(--border);
+    padding:5px 9px;
+    border-radius:2px;
+    color:var(--bone-dim);
+  }
+  .quote-tag::before{content:"“"; color:var(--amber);}
+  .quote-tag::after{content:"”"; color:var(--amber);}
+
+  .evidence-toggle{
+    background:none;
+    border:1px solid var(--border);
+    color:var(--teal);
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    padding:7px 12px;
+    border-radius:2px;
+    cursor:pointer;
+    margin-top:6px;
+  }
+  .evidence-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(230px,1fr));
+    gap:10px;
+    margin-top:14px;
+  }
+  .evidence-card{
+    background:var(--ink);
+    border:1px solid var(--border);
+    border-radius:2px;
+    padding:11px 12px;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11.5px;
+  }
+  .evidence-card .hash{color:var(--amber); font-weight:600;}
+  .evidence-card .subject{color:var(--bone); margin:5px 0; font-family:'IBM Plex Sans', sans-serif; font-size:12.5px; line-height:1.4;}
+  .evidence-card .who{color:var(--bone-dim); font-size:10.5px;}
+  .evidence-card .copy-btn{
+    margin-top:8px;
+    background:none;
+    border:1px solid var(--border);
+    color:var(--teal);
+    font-size:10.5px;
+    padding:4px 8px;
+    border-radius:2px;
+    cursor:pointer;
+  }
+  .evidence-card .copy-btn.copied{color:var(--vital); border-color:var(--vital);}
+
+  .ghost-block{
+    border-left:2px solid var(--teal);
+    padding-left:12px;
+    margin:14px 0;
+    font-size:13px;
+    color:var(--bone-dim);
+  }
+  .ghost-block .g-subj{color:var(--bone); font-family:'IBM Plex Mono', monospace; font-size:12px;}
+
+  .regenerate-row{display:flex; gap:10px; margin-top:16px;}
+  .regenerate-row button{
+    background:none;
+    border:1px solid var(--border);
+    color:var(--bone-dim);
+    font-size:12px;
+    padding:7px 12px;
+    border-radius:2px;
+    cursor:pointer;
+  }
+  .regenerate-row button:hover{color:var(--amber); border-color:var(--amber);}
+
+  .skeleton{color:var(--bone-dim); font-family:'IBM Plex Mono', monospace; font-size:12.5px;}
+  .skeleton::after{content:"…"; animation:blink 1.2s infinite;}
+  @keyframes blink{0%,100%{opacity:.3;}50%{opacity:1;}}
+
+  .footer-note{
+    margin-top:50px;
+    padding-top:20px;
+    border-top:1px solid var(--border);
+    font-size:12px;
+    color:var(--bone-dim);
+    opacity:.75;
+  }
+  #results{margin-top:10px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="hero">
+    <p class="eyebrow">Architektur-Archäologie · Feld-Bericht</p>
+    <h1>Der Architektur-Chronist</h1>
+    <p class="sub">Fütter das Werkzeug mit den Rohdaten deiner Codebase — Git-Historie, Struktur, Audit-Funde. Es gräbt Epochen frei, misst Vitalwerte, findet Gespenster-Projekte und schreibt daraus eine Geschichte, die sich strikt an das hält, was in den Daten steht.</p>
+  </div>
+
+  <div class="panel">
+    <h2>Fundstücke einreichen</h2>
+    <div class="field-grid">
+      <div class="field">
+        <label for="gitlog">Git-Log <span class="req">(erforderlich)</span></label>
+        <textarea id="gitlog" placeholder="git log --pretty=format:&quot;%h|%ad|%an|%s&quot; --date=short
+
+Beispiel:
+a3f21c9|2023-04-02|Sarah|Initial commit
+b91e0aa|2023-04-03|Sarah|Add auth module"></textarea>
+        <p class="hint">Format: hash|datum|autor|betreff — eine Zeile pro Commit.</p>
+      </div>
+      <div class="field">
+        <label for="structure">Code-Struktur (optional)</label>
+        <textarea id="structure" placeholder="find . -name '*.ts' | xargs wc -l
+
+Beispiel:
+src/auth/login.ts 84
+src/auth/session.ts 212"></textarea>
+        <p class="hint">Datei/Modul und Zeilenzahl pro Zeile.</p>
+      </div>
+      <div class="field">
+        <label for="ara">Audit-Daten (optional, JSON)</label>
+        <textarea id="ara" placeholder='[{"module":"legacyExportWorker","status":"P0-removal","confidence":0.9,"note":"keine eingehenden Referenzen"}]'></textarea>
+        <p class="hint">Beliebiges JSON-Array, z. B. aus deinem ARA-Tool.</p>
+      </div>
+      <div class="field">
+        <label for="logs">Log-Auszüge (optional, Freitext)</label>
+        <textarea id="logs" placeholder="2023-07-14 03:12 ERROR OOM in worker pool
+2023-07-14 03:15 Incident declared"></textarea>
+        <p class="hint">Incidents, Ausfälle, besondere Ereignisse — freier Text.</p>
+      </div>
+    </div>
+
+    <div class="controls-row">
+      <div class="tone-toggle" role="group" aria-label="Erzählton">
+        <button type="button" id="tone-erzaehlerisch" class="active">Erzählerisch</button>
+        <button type="button" id="tone-nuechtern">Nüchtern</button>
+      </div>
+      <button class="btn-primary" id="generate-btn">Chronik erzeugen</button>
+    </div>
+    <p class="status-line" id="status-line"></p>
+  </div>
+
+  <div id="strata-section" class="strata-section" style="display:none;">
+    <h2>Vitalwerte &amp; Schichtprofil</h2>
+    <p class="strata-note">Jede Schicht ist eine erkannte Epoche. Die Linie oben ist ein heuristischer Gesundheits-Index (kein Beweis, nur ein Muster-Indikator) — Einbrüche markieren mögliche Krisen. Klick auf Schicht oder Punkt springt zur Epoche.</p>
+    <div class="strata-svg-wrap"><svg id="strata-svg"></svg></div>
+  </div>
+
+  <div id="results"></div>
+
+  <div class="footer-note">
+    Alle Aussagen basieren auf Mustern in den eingereichten Rohdaten (Commit-Metadaten, Textheuristiken). Nichts davon ist verifizierter Fakt über Motive oder Ursachen — nutze die Beweis-Karten, um jede Behauptung selbst gegenzuprüfen.
+  </div>
+
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ---------- State ----------
+  let tone = 'erzaehlerisch';
+  let commits = [];
+  let epochsData = [];
+
+  // ---------- UI: tone toggle ----------
+  const toneErz = document.getElementById('tone-erzaehlerisch');
+  const toneNue = document.getElementById('tone-nuechtern');
+  toneErz.addEventListener('click', ()=>{ tone='erzaehlerisch'; toneErz.classList.add('active'); toneNue.classList.remove('active'); });
+  toneNue.addEventListener('click', ()=>{ tone='nuechtern'; toneNue.classList.add('active'); toneErz.classList.remove('active'); });
+
+  // ---------- Parsing ----------
+  function parseGitLog(raw){
+    const lines = raw.split('\n').map(l=>l.trim()).filter(Boolean);
+    const out = [];
+    lines.forEach((line, idx)=>{
+      const parts = line.split('|');
+      if(parts.length >= 4){
+        const [hash, date, author, ...rest] = parts;
+        const subject = rest.join('|').trim();
+        const d = new Date(date.trim());
+        if(!isNaN(d.getTime())){
+          out.push({hash: hash.trim(), date: d, author: author.trim(), subject});
+        }
+      }
+    });
+    out.sort((a,b)=>a.date-b.date);
+    return out;
+  }
+
+  function parseStructure(raw){
+    if(!raw.trim()) return [];
+    return raw.split('\n').map(l=>l.trim()).filter(Boolean).map(line=>{
+      const m = line.match(/^(.*\S)\s+(\d+)\s*$/);
+      if(m) return {path:m[1], lines: parseInt(m[2],10)};
+      return {path:line, lines:null};
+    });
+  }
+
+  function parseARA(raw){
+    if(!raw.trim()) return null;
+    try { return JSON.parse(raw); } catch(e){ return null; }
+  }
+
+  // ---------- Weekly buckets ----------
+  function weekStart(d){
+    const dt = new Date(d);
+    const day = (dt.getDay()+6)%7; // Monday=0
+    dt.setHours(0,0,0,0);
+    dt.setDate(dt.getDate()-day);
+    return dt;
+  }
+
+  function buildWeeks(commits){
+    if(!commits.length) return [];
+    const first = weekStart(commits[0].date);
+    const last = weekStart(commits[commits.length-1].date);
+    const weeks = [];
+    let cur = new Date(first);
+    while(cur <= last){
+      weeks.push({date: new Date(cur), commits: []});
+      cur.setDate(cur.getDate()+7);
+    }
+    commits.forEach(c=>{
+      const ws = weekStart(c.date).getTime();
+      const w = weeks.find(w=>w.date.getTime()===ws);
+      if(w) w.commits.push(c);
+    });
+    return weeks;
+  }
+
+  // ---------- Epoch detection ----------
+  function detectEpochs(weeks){
+    if(weeks.length === 0) return [];
+    if(weeks.length < 4){
+      return [{weeks, commits: weeks.flatMap(w=>w.commits)}];
+    }
+    const counts = weeks.map(w=>w.commits.length);
+    const smoothed = counts.map((c,i)=>{
+      const lo=Math.max(0,i-1), hi=Math.min(counts.length-1,i+1);
+      let s=0,n=0; for(let j=lo;j<=hi;j++){s+=counts[j];n++;}
+      return s/n;
+    });
+    const mean = smoothed.reduce((a,b)=>a+b,0)/smoothed.length;
+    const variance = smoothed.reduce((a,b)=>a+Math.pow(b-mean,2),0)/smoothed.length;
+    const std = Math.sqrt(variance) || 1;
+    const boundaries = [0];
+    for(let i=1;i<smoothed.length;i++){
+      const delta = Math.abs(smoothed[i]-smoothed[i-1]);
+      const resumedAfterSilence = counts[i-1]===0 && counts[i]>0;
+      if(delta > std*1.3 || resumedAfterSilence) boundaries.push(i);
+    }
+    boundaries.push(weeks.length);
+    let raw = [];
+    for(let i=0;i<boundaries.length-1;i++){
+      const s=boundaries[i], e=boundaries[i+1];
+      if(e>s) raw.push(weeks.slice(s,e));
+    }
+    // merge tiny epochs into neighbor with higher combined count
+    function totalCommits(seg){ return seg.reduce((a,w)=>a+w.commits.length,0); }
+    let changed = true;
+    while(changed && raw.length > 1){
+      changed = false;
+      for(let i=0;i<raw.length;i++){
+        if(raw[i].length < 2 || totalCommits(raw[i]) < 3){
+          if(i === 0){ raw[1] = raw[0].concat(raw[1]); raw.splice(0,1); }
+          else if(i === raw.length-1){ raw[i-1] = raw[i-1].concat(raw[i]); raw.splice(i,1); }
+          else {
+            const prevTot = totalCommits(raw[i-1]), nextTot = totalCommits(raw[i+1]);
+            if(prevTot >= nextTot){ raw[i-1] = raw[i-1].concat(raw[i]); raw.splice(i,1); }
+            else { raw[i+1] = raw[i].concat(raw[i+1]); raw.splice(i,1); }
+          }
+          changed = true;
+          break;
+        }
+      }
+    }
+    // cap max epochs at 9, merge weakest adjacent pair repeatedly
+    while(raw.length > 9){
+      let minIdx = 0, minSum = Infinity;
+      for(let i=0;i<raw.length-1;i++){
+        const s = totalCommits(raw[i]) + totalCommits(raw[i+1]);
+        if(s < minSum){ minSum = s; minIdx = i; }
+      }
+      raw[minIdx] = raw[minIdx].concat(raw[minIdx+1]);
+      raw.splice(minIdx+1,1);
+    }
+    return raw.map(seg=>({weeks: seg, commits: seg.flatMap(w=>w.commits)}));
+  }
+
+  // ---------- Health index ----------
+  const FRUSTRATION_WORDS = ['hack','workaround','temporary','todo','fixme','ugh','argh','wtf','omg','please work',
+    'idk','no idea','keine ahnung','verzweifel','endlich','hoffentlich','sorry','oops','desperat'];
+  const REVERT_RE = /\brevert\b/i;
+  const TYPO_RE = /\btypo\b/i;
+  const TEST_RE = /\btest(s|ing)?\b/i;
+  const REFACTOR_RE = /\brefactor(ing)?\b/i;
+
+  function weeklyHealth(weeks){
+    return weeks.map(w=>{
+      const subs = w.commits.map(c=>c.subject.toLowerCase());
+      let score = 100;
+      const reverts = subs.filter(s=>REVERT_RE.test(s)).length;
+      const typos = subs.filter(s=>TYPO_RE.test(s)).length;
+      const frustration = subs.filter(s=>FRUSTRATION_WORDS.some(fw=>s.includes(fw))).length;
+      const hasTest = subs.some(s=>TEST_RE.test(s));
+      const hasRefactor = subs.some(s=>REFACTOR_RE.test(s));
+      score -= reverts*8;
+      score -= typos*3;
+      score -= frustration*4;
+      if(hasTest) score += 5;
+      if(hasRefactor) score += 3;
+      score = Math.max(0, Math.min(100, score));
+      return {date:w.date, score, count:w.commits.length, reverts, typos, frustration};
+    });
+  }
+
+  // ---------- Ghost projects ----------
+  const STOPWORDS = new Set(['the','and','for','with','von','die','der','das','ein','eine','zu','für','mit','auf','aus','fix','add','update']);
+  function keywordsOf(subject){
+    return subject.toLowerCase().replace(/[^a-zäöüß0-9\s]/g,'').split(/\s+/).filter(w=>w.length>3 && !STOPWORDS.has(w));
+  }
+  function detectGhosts(commits){
+    const starterRe = /^(start|begin|initial|wip|poc|prototype|experiment|versuch)\b/i;
+    const starters = commits.filter(c=> starterRe.test(c.subject) || /migration/i.test(c.subject));
+    const ghosts = [];
+    starters.forEach(starter=>{
+      const kws = keywordsOf(starter.subject);
+      if(!kws.length) return;
+      const followUps = commits.filter(c=>{
+        if(c.hash === starter.hash || c.date <= starter.date) return false;
+        const ck = keywordsOf(c.subject);
+        return ck.some(k=>kws.includes(k));
+      });
+      const lastTouch = followUps.length ? followUps[followUps.length-1].date : starter.date;
+      const daysSince = (Date.now() - lastTouch.getTime())/86400000;
+      if(followUps.length <= 1 && daysSince > 60){
+        ghosts.push({starter, followUps, keywords: kws});
+      }
+    });
+    return ghosts;
+  }
+
+  // ---------- Quote radar ----------
+  function extractQuotes(commits){
+    return commits.filter(c=>{
+      const s = c.subject.toLowerCase();
+      return FRUSTRATION_WORDS.some(fw=>s.includes(fw));
+    }).slice(0,6);
+  }
+
+  // ---------- Bus factor ----------
+  function busFactor(commits){
+    const counts = {};
+    commits.forEach(c=> counts[c.author] = (counts[c.author]||0)+1);
+    const total = commits.length || 1;
+    const sorted = Object.entries(counts).sort((a,b)=>b[1]-a[1]);
+    if(!sorted.length) return null;
+    const [name, count] = sorted[0];
+    return {name, count, share: Math.round((count/total)*100)};
+  }
+
+  // ---------- Evidence selection ----------
+  function pickEvidence(epoch, ghosts, quotes){
+    const set = new Map();
+    epoch.commits.filter(c=>REVERT_RE.test(c.subject)).forEach(c=>set.set(c.hash,c));
+    quotes.forEach(c=>set.set(c.hash,c));
+    ghosts.forEach(g=>set.set(g.starter.hash, g.starter));
+    // storm peak week commits
+    let peakWeek = null, peakCount = -1;
+    epoch.weeks.forEach(w=>{ if(w.commits.length>peakCount){ peakCount=w.commits.length; peakWeek=w; } });
+    if(peakWeek) peakWeek.commits.slice(0,4).forEach(c=>set.set(c.hash,c));
+    return Array.from(set.values()).slice(0,10);
+  }
+
+  // ---------- Build evidence package for API ----------
+  function buildPackage(epoch, idx, structure, ara, logs){
+    const health = weeklyHealth(epoch.weeks);
+    const avgHealth = Math.round(health.reduce((a,h)=>a+h.score,0)/health.length);
+    const ghosts = detectGhosts(epoch.commits);
+    const quotes = extractQuotes(epoch.commits);
+    const bf = busFactor(epoch.commits);
+    const totalReverts = health.reduce((a,h)=>a+h.reverts,0);
+    const totalTypos = health.reduce((a,h)=>a+h.typos,0);
+    const maxWeek = Math.max(...epoch.weeks.map(w=>w.commits.length));
+    const avgWeek = epoch.commits.length / epoch.weeks.length;
+    const isCrisis = totalReverts>=2 || totalTypos>=3 || (maxWeek/avgWeek)>2.5 || quotes.length>=3;
+
+    const startD = epoch.weeks[0].date.toISOString().slice(0,10);
+    const endD = epoch.weeks[epoch.weeks.length-1].date.toISOString().slice(0,10);
+
+    const pkg = {
+      epochIndex: idx+1,
+      dateRange: `${startD} bis ${endD}`,
+      commitCount: epoch.commits.length,
+      averageHealthIndex: avgHealth,
+      isCrisisEpoch: isCrisis,
+      crisisSignals: {reverts: totalReverts, typoFixes: totalTypos, stormRatio: Number((maxWeek/avgWeek).toFixed(2)), frustrationQuoteCount: quotes.length},
+      busFactor: bf,
+      ghostProjects: ghosts.map(g=>({startedCommit: g.starter.subject, startedDate: g.starter.date.toISOString().slice(0,10), followUpCount: g.followUps.length})),
+      quotesFromCommits: quotes.map(c=>c.subject),
+      topAuthors: Object.entries(epoch.commits.reduce((acc,c)=>{acc[c.author]=(acc[c.author]||0)+1; return acc;},{})).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n,c])=>({name:n,commits:c}))
+    };
+    if(structure && structure.length){
+      pkg.structureSample = structure.slice(0,15);
+    }
+    if(ara){
+      pkg.auditFindings = ara;
+    }
+    if(logs && logs.trim()){
+      pkg.logExcerpt = logs.trim().slice(0,1200);
+    }
+    return {pkg, ghosts, quotes, avgHealth, isCrisis};
+  }
+
+  // ---------- API call ----------
+  async function generateEpochStory(pkg, toneMode){
+    const toneInstruction = toneMode === 'nuechtern'
+      ? 'sachlich, knapp und nüchtern, wie ein Ermittlungsbericht'
+      : 'spannend erzählt, aber vollständig realistisch und unaufgeregt-glaubwürdig';
+    const sys = 'Du bist ein forensischer Code-Archäologe. Du bekommst ein striktes Beweispaket (JSON) mit Fakten aus einer Epoche der Git-Historie einer Software. '
+      + 'AUFGABE: Schreibe daraus eine Epochen-Erzählung auf Deutsch, Stil: ' + toneInstruction + ', Länge 150-220 Wörter. '
+      + 'HARTE REGELN: Erfinde nichts, das nicht aus den gelieferten Daten ableitbar ist. Nenne keine Namen von Personen ausser den im Datenpaket gelieferten Autorennamen. '
+      + 'Kausale Verbindungen, die du vermutest aber nicht beweisen kannst, formuliere explizit als Vermutung (z.B. "das lässt vermuten, dass..."). '
+      + 'Gib zusätzlich einen atmosphärischen, aber ableitbaren Epochen-Titel (max. 6 Wörter). '
+      + 'Antworte AUSSCHLIESSLICH als reines JSON-Objekt ohne Markdown-Codeblock, ohne Einleitung, ohne Nachsatz: {"title":"...","story":"...","causalChains":["...", "..."]}. causalChains ist eine Liste von 0-3 kurzen vermuteten Ursache-Wirkungs-Ketten, leer wenn keine erkennbar.';
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 1000,
+        system: sys,
+        messages: [{role:'user', content: JSON.stringify(pkg)}]
+      })
+    });
+    const data = await res.json();
+    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    const clean = text.replace(/```json|```/g,'').trim();
+    try {
+      const parsed = JSON.parse(clean);
+      if(!parsed.title) parsed.title = 'Epoche ' + pkg.epochIndex;
+      if(!parsed.story) parsed.story = text;
+      if(!parsed.causalChains) parsed.causalChains = [];
+      return parsed;
+    } catch(e){
+      return {title: 'Epoche ' + pkg.epochIndex, story: text || 'Die Erzählung konnte nicht generiert werden.', causalChains: []};
+    }
+  }
+
+  // ---------- Rendering: evidence card ----------
+  function renderEvidenceCard(c){
+    const div = document.createElement('div');
+    div.className = 'evidence-card';
+    div.innerHTML = `
+      <div><span class="hash">${escapeHtml(c.hash || '—')}</span> · ${c.date.toISOString().slice(0,10)}</div>
+      <div class="subject">${escapeHtml(c.subject)}</div>
+      <div class="who">${escapeHtml(c.author)}</div>
+      <button class="copy-btn" type="button">git show ${escapeHtml((c.hash||'').slice(0,8))}</button>
+    `;
+    const btn = div.querySelector('.copy-btn');
+    btn.addEventListener('click', ()=>{
+      const cmd = `git show ${c.hash}`;
+      navigator.clipboard.writeText(cmd).then(()=>{
+        btn.classList.add('copied');
+        btn.textContent = 'kopiert ✓';
+        setTimeout(()=>{ btn.classList.remove('copied'); btn.textContent = `git show ${c.hash.slice(0,8)}`; }, 1600);
+      }).catch(()=>{ btn.textContent = 'Kopieren fehlgeschlagen'; });
+    });
+    return div;
+  }
+
+  function escapeHtml(s){
+    return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]));
+  }
+
+  // ---------- Rendering: epoch card ----------
+  function renderEpochCard(idx, pkgBundle){
+    const {pkg, ghosts, quotes, avgHealth, isCrisis} = pkgBundle;
+    const card = document.createElement('div');
+    card.className = 'epoch-card' + (isCrisis ? ' crisis' : '');
+    card.id = 'epoch-' + idx;
+
+    const meta = document.createElement('div');
+    meta.className = 'epoch-meta';
+    meta.innerHTML = `<span>${pkg.dateRange}</span><span>${pkg.commitCount} Commits</span><span>Vitalindex Ø ${avgHealth}</span>`;
+    card.appendChild(meta);
+
+    const title = document.createElement('h3');
+    title.className = 'epoch-title';
+    title.textContent = 'Wird ausgegraben …';
+    card.appendChild(title);
+
+    const badges = document.createElement('div');
+    if(isCrisis) badges.innerHTML += '<span class="badge crisis">Krisensignal</span>';
+    if(ghosts.length) badges.innerHTML += `<span class="badge ghost">${ghosts.length} Geister-Projekt${ghosts.length>1?'e':''}</span>`;
+    if(pkg.busFactor && pkg.busFactor.share >= 60) badges.innerHTML += `<span class="badge bus">Bus-Faktor: ${escapeHtml(pkg.busFactor.name)} (${pkg.busFactor.share}%)</span>`;
+    card.appendChild(badges);
+
+    const story = document.createElement('p');
+    story.className = 'epoch-story skeleton';
+    story.textContent = 'Fakten werden zu einer Erzählung verdichtet';
+    card.appendChild(story);
+
+    const causalBox = document.createElement('div');
+    causalBox.style.display = 'none';
+    card.appendChild(causalBox);
+
+    if(quotes.length){
+      const qRow = document.createElement('div');
+      qRow.className = 'quotes-row';
+      quotes.forEach(q=>{
+        const tag = document.createElement('span');
+        tag.className = 'quote-tag';
+        tag.textContent = q.subject;
+        qRow.appendChild(tag);
+      });
+      card.appendChild(qRow);
+    }
+
+    if(ghosts.length){
+      ghosts.forEach(g=>{
+        const gb = document.createElement('div');
+        gb.className = 'ghost-block';
+        gb.innerHTML = `Begonnen am ${g.starter.date.toISOString().slice(0,10)}: <span class="g-subj">${escapeHtml(g.starter.subject)}</span> — danach ${g.followUps.length} verwandte Anschluss-Commit(s). Wirkt verlassen.`;
+        card.appendChild(gb);
+      });
+    }
+
+    const evidenceList = pickEvidence({commits: epochsData[idx].raw.commits, weeks: epochsData[idx].raw.weeks}, ghosts, quotes);
+    if(evidenceList.length){
+      const toggle = document.createElement('button');
+      toggle.className = 'evidence-toggle';
+      toggle.type = 'button';
+      toggle.textContent = `▸ ${evidenceList.length} Beweis-Karten ansehen`;
+      const grid = document.createElement('div');
+      grid.className = 'evidence-grid';
+      grid.style.display = 'none';
+      evidenceList.forEach(c=> grid.appendChild(renderEvidenceCard(c)));
+      toggle.addEventListener('click', ()=>{
+        const open = grid.style.display !== 'none';
+        grid.style.display = open ? 'none' : 'grid';
+        toggle.textContent = (open ? '▸ ' : '▾ ') + evidenceList.length + ' Beweis-Karten ansehen';
+      });
+      card.appendChild(toggle);
+      card.appendChild(grid);
+    }
+
+    const regenRow = document.createElement('div');
+    regenRow.className = 'regenerate-row';
+    const regenBtn = document.createElement('button');
+    regenBtn.type = 'button';
+    regenBtn.textContent = 'Erzählung neu generieren';
+    regenBtn.addEventListener('click', async ()=>{
+      story.textContent = 'Fakten werden neu verdichtet';
+      story.classList.add('skeleton');
+      const result = await generateEpochStory(pkg, tone);
+      applyStoryResult(title, story, causalBox, result);
+    });
+    regenRow.appendChild(regenBtn);
+    card.appendChild(regenRow);
+
+    return {card, title, story, causalBox};
+  }
+
+  function applyStoryResult(titleEl, storyEl, causalBoxEl, result){
+    titleEl.textContent = result.title;
+    storyEl.classList.remove('skeleton');
+    storyEl.textContent = result.story;
+    if(result.causalChains && result.causalChains.length){
+      causalBoxEl.style.display = 'block';
+      causalBoxEl.className = 'causal-box';
+      causalBoxEl.innerHTML = '<strong>Vermutete Kausalketten</strong>' + result.causalChains.map(c=>`<div>→ ${escapeHtml(c)}</div>`).join('');
+    } else {
+      causalBoxEl.style.display = 'none';
+    }
+  }
+
+  // ---------- Strata SVG ----------
+  function hexToRgb(hex){
+    const v = hex.replace('#','');
+    return [parseInt(v.slice(0,2),16), parseInt(v.slice(2,4),16), parseInt(v.slice(4,6),16)];
+  }
+  function lerpColor(hexA, hexB, t){
+    const a = hexToRgb(hexA), b = hexToRgb(hexB);
+    const r = Math.round(a[0]+(b[0]-a[0])*t);
+    const g = Math.round(a[1]+(b[1]-a[1])*t);
+    const bl = Math.round(a[2]+(b[2]-a[2])*t);
+    return `rgb(${r},${g},${bl})`;
+  }
+
+  function renderStrata(bundles){
+    const svgW = 1100, bandH = 90, ecgH = 70, gap = 6, labelPad = 18;
+    const totalWeeks = bundles.reduce((a,b)=>a+b.raw.weeks.length,0) || 1;
+    const svg = document.getElementById('strata-svg');
+    svg.setAttribute('viewBox', `0 0 ${svgW} ${ecgH+bandH+labelPad}`);
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', ecgH+bandH+labelPad);
+    svg.innerHTML = '';
+
+    // defs: crack pattern for crisis, dot pattern for ghosts
+    const ns = 'http://www.w3.org/2000/svg';
+    const defs = document.createElementNS(ns,'defs');
+    const crack = document.createElementNS(ns,'pattern');
+    crack.setAttribute('id','crackPattern'); crack.setAttribute('width','14'); crack.setAttribute('height','14'); crack.setAttribute('patternUnits','userSpaceOnUse'); crack.setAttribute('patternTransform','rotate(35)');
+    const crackLine = document.createElementNS(ns,'line');
+    crackLine.setAttribute('x1','0'); crackLine.setAttribute('y1','0'); crackLine.setAttribute('x2','0'); crackLine.setAttribute('y2','14');
+    crackLine.setAttribute('stroke','rgba(0,0,0,0.35)'); crackLine.setAttribute('stroke-width','1.5');
+    crack.appendChild(crackLine); defs.appendChild(crack);
+
+    const dots = document.createElementNS(ns,'pattern');
+    dots.setAttribute('id','ghostPattern'); dots.setAttribute('width','10'); dots.setAttribute('height','10'); dots.setAttribute('patternUnits','userSpaceOnUse');
+    const dotC = document.createElementNS(ns,'circle');
+    dotC.setAttribute('cx','2'); dotC.setAttribute('cy','2'); dotC.setAttribute('r','1');
+    dotC.setAttribute('fill','rgba(237,230,214,0.35)');
+    dots.appendChild(dotC); defs.appendChild(dots);
+    svg.appendChild(defs);
+
+    // ---- vital line data across all weeks ----
+    let allHealth = [];
+    bundles.forEach(b=>{ allHealth = allHealth.concat(weeklyHealth(b.raw.weeks)); });
+    const pts = [];
+    let xCursor = 0;
+    allHealth.forEach(h=>{
+      const x = (xCursor/totalWeeks)*svgW;
+      const y = ecgH - (h.score/100)*ecgH + 4;
+      pts.push({x, y, score:h.score});
+      xCursor++;
+    });
+    const linePath = pts.map((p,i)=> (i===0?'M':'L') + p.x.toFixed(1) + ' ' + p.y.toFixed(1)).join(' ');
+    const path = document.createElementNS(ns,'path');
+    path.setAttribute('d', linePath);
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke','var(--vital)');
+    path.setAttribute('stroke-width','1.6');
+    svg.appendChild(path);
+
+    // crisis dip markers
+    pts.forEach((p,i)=>{
+      if(p.score < 55){
+        const c = document.createElementNS(ns,'circle');
+        c.setAttribute('cx', p.x); c.setAttribute('cy', p.y); c.setAttribute('r','3.2');
+        c.setAttribute('fill','var(--crisis)');
+        c.classList.add('vital-dot');
+        // find which epoch this week index belongs to
+        let cum = 0, epIdx = 0;
+        for(let e=0;e<bundles.length;e++){ cum += bundles[e].raw.weeks.length; if(i < cum){ epIdx = e; break; } epIdx = e; }
+        c.addEventListener('click', ()=>{
+          document.getElementById('epoch-'+epIdx).scrollIntoView({behavior:'smooth', block:'center'});
+        });
+        svg.appendChild(c);
+      }
+    });
+
+    // ---- strata bands ----
+    let x = 0;
+    bundles.forEach((b, idx)=>{
+      const wCount = b.raw.weeks.length;
+      const bw = (wCount/totalWeeks)*svgW;
+      const t = 1 - (b.avgHealth/100); // 0 healthy .. 1 crisis
+      const fill = lerpColor('#6B8F5C', '#9C3B2E', Math.max(0,Math.min(1,t)));
+
+      const g = document.createElementNS(ns,'g');
+      g.setAttribute('class','stratum');
+      g.addEventListener('click', ()=>{
+        document.getElementById('epoch-'+idx).scrollIntoView({behavior:'smooth', block:'start'});
+      });
+
+      const rect = document.createElementNS(ns,'rect');
+      rect.setAttribute('class','band');
+      rect.setAttribute('x', x); rect.setAttribute('y', ecgH+gap);
+      rect.setAttribute('width', Math.max(bw-2,1)); rect.setAttribute('height', bandH);
+      rect.setAttribute('fill', fill);
+      g.appendChild(rect);
+
+      if(b.isCrisis){
+        const overlay = document.createElementNS(ns,'rect');
+        overlay.setAttribute('x', x); overlay.setAttribute('y', ecgH+gap);
+        overlay.setAttribute('width', Math.max(bw-2,1)); overlay.setAttribute('height', bandH);
+        overlay.setAttribute('fill','url(#crackPattern)');
+        g.appendChild(overlay);
+      }
+      if(b.ghosts.length){
+        const overlay2 = document.createElementNS(ns,'rect');
+        overlay2.setAttribute('x', x); overlay2.setAttribute('y', ecgH+gap);
+        overlay2.setAttribute('width', Math.max(bw-2,1)); overlay2.setAttribute('height', bandH*0.3);
+        overlay2.setAttribute('fill','url(#ghostPattern)');
+        g.appendChild(overlay2);
+      }
+
+      if(bw > 40){
+        const label = document.createElementNS(ns,'text');
+        label.setAttribute('class','stratum-label');
+        label.setAttribute('x', x+6); label.setAttribute('y', ecgH+gap+bandH-8);
+        label.textContent = 'E' + (idx+1);
+        g.appendChild(label);
+      }
+
+      svg.appendChild(g);
+      x += bw;
+    });
+
+    document.getElementById('strata-section').style.display = 'block';
+  }
+
+  // ---------- Main flow ----------
+  const genBtn = document.getElementById('generate-btn');
+  const statusLine = document.getElementById('status-line');
+  const resultsEl = document.getElementById('results');
+
+  genBtn.addEventListener('click', async ()=>{
+    const gitlogRaw = document.getElementById('gitlog').value;
+    const structureRaw = document.getElementById('structure').value;
+    const araRaw = document.getElementById('ara').value;
+    const logsRaw = document.getElementById('logs').value;
+
+    commits = parseGitLog(gitlogRaw);
+    if(commits.length < 3){
+      statusLine.textContent = 'Zu wenige gültige Commits erkannt. Prüfe das Format (hash|datum|autor|betreff).';
+      statusLine.style.color = 'var(--crisis)';
+      return;
+    }
+    statusLine.style.color = 'var(--bone-dim)';
+
+    const structure = parseStructure(structureRaw);
+    const ara = parseARA(araRaw);
+    if(araRaw.trim() && !ara){
+      statusLine.textContent = 'Audit-JSON konnte nicht geparst werden — wird ignoriert.';
+    }
+
+    const weeks = buildWeeks(commits);
+    const rawEpochs = detectEpochs(weeks);
+
+    genBtn.disabled = true;
+    resultsEl.innerHTML = '';
+    document.getElementById('strata-section').style.display = 'none';
+
+    epochsData = rawEpochs.map(raw=>({raw}));
+    const bundles = [];
+    const cardRefs = [];
+
+    rawEpochs.forEach((raw, idx)=>{
+      const bundle = buildPackage(raw, idx, structure, ara, logsRaw);
+      bundle.raw = raw;
+      bundles.push(bundle);
+      const {card, title, story, causalBox} = renderEpochCard(idx, bundle);
+      resultsEl.appendChild(card);
+      cardRefs.push({title, story, causalBox});
+    });
+
+    renderStrata(bundles);
+
+    for(let i=0;i<bundles.length;i++){
+      statusLine.textContent = `Grabe Epoche ${i+1} von ${bundles.length} aus …`;
+      try{
+        const result = await generateEpochStory(bundles[i].pkg, tone);
+        applyStoryResult(cardRefs[i].title, cardRefs[i].story, cardRefs[i].causalBox, result);
+      } catch(e){
+        cardRefs[i].story.classList.remove('skeleton');
+        cardRefs[i].story.textContent = 'Fehler beim Abruf der Erzählung. Bitte "Erzählung neu generieren" versuchen.';
+        cardRefs[i].title.textContent = 'Epoche ' + (i+1);
+      }
+    }
+
+    statusLine.textContent = `Fertig. ${bundles.length} Epoche${bundles.length>1?'n':''} freigelegt.`;
+    genBtn.disabled = false;
+  });
+
+})();
+</script>
+</body>
+</html>
