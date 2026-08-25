@@ -62,6 +62,12 @@
   .brand h1{font-family:var(--display); font-size:19px; margin:0; font-weight:700; letter-spacing:-.01em;}
   .brand .sub{font-size:12px; color:var(--text-faint); margin-top:1px;}
   .header-actions{display:flex; align-items:center; gap:10px;}
+  .home-link{
+    font-size:12px; color:var(--text-faint); text-decoration:none; white-space:nowrap;
+    display:inline-flex; align-items:center; gap:5px; padding:5px 9px; border-radius:7px;
+    border:1px solid transparent; transition:.12s ease;
+  }
+  .home-link:hover{color:var(--text); border-color:var(--border); background:var(--surface-2);}
 
   .gauge-wrap{display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 16px;}
   .gauge-nums{display:flex; flex-direction:column;}
@@ -246,6 +252,7 @@
 <div class="app">
 
   <header class="top">
+    <a class="home-link" href="../index.html">← Alle Werkzeuge</a>
     <div class="brand">
       <div class="mark">ARA</div>
       <div>
