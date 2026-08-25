@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>bewusstki-tools — freie Beweis- und Audit-Werkzeuge</title>
+<meta name="description" content="Freie, quelloffene, komplett clientseitige Beweis- und Audit-Werkzeuge von Bewusst.KI.">
+<style>
+  :root{
+    --bg: #0a0a0c;
+    --surface: #131318;
+    --border: #232532;
+    --gold: #d4af37;
+    --platin: #e5e4e2;
+    --text-muted: #8b8c99;
+  }
+  *{ box-sizing: border-box; margin: 0; padding: 0; }
+  body{
+    background: var(--bg);
+    color: var(--platin);
+    font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+  .wrap{ max-width: 760px; margin: 0 auto; padding: 64px 24px; }
+  .eyebrow{
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 12px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 12px;
+  }
+  h1{ font-size: clamp(28px, 5vw, 40px); margin-bottom: 14px; letter-spacing: -0.02em; }
+  .lede{ color: var(--text-muted); font-size: 16px; max-width: 60ch; margin-bottom: 40px; }
+  .tool-list{ display: flex; flex-direction: column; gap: 14px; }
+  .tool-card{
+    display: block;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    border-radius: 8px;
+    padding: 20px 22px;
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s;
+  }
+  .tool-card:hover{ border-color: var(--gold); }
+  .tool-name{ font-size: 17px; font-weight: 600; color: var(--platin); margin-bottom: 6px; }
+  .tool-desc{ font-size: 14px; color: var(--text-muted); }
+  footer{
+    margin-top: 56px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  footer a{ color: var(--gold); text-decoration: none; }
+  footer a:hover{ text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Bewusst.KI · Open Source · MIT-Lizenz</div>
+  <h1>Freie Beweis- und Audit-Werkzeuge</h1>
+  <p class="lede">
+    Jedes Werkzeug hier ist eine einzelne HTML-Datei. Läuft vollständig im Browser, ohne Server,
+    ohne Tracking, ohne Anmeldung. Herunterladen, öffnen, benutzen — der Quellcode ist die Datei
+    selbst.
+  </p>
+
+  <div class="tool-list">
+    <a class="tool-card" href="aussagen-audit/index.html">
+      <div class="tool-name">Aussagen-Audit</div>
+      <div class="tool-desc">Belegt eine Aussage oder ein Angebot mit einem manipulationssicheren SHA-256-Hash-Siegel über Text + Belegdokumente. Gegenprüfen zeigt sofort, ob etwas seitdem verändert wurde.</div>
+    </a>
+    <a class="tool-card" href="ARA/ara-audit-console.html">
+      <div class="tool-name">ARA — Architecture Reduction Audit</div>
+      <div class="tool-desc">Strukturiertes Architektur-Cleanup großer Codebasen: Manifest → Zielarchitektur → Agenten-Fragebogen → Dashboard mit Konflikt-Erkennung → Reduktionsplan.</div>
+    </a>
+    <a class="tool-card" href="CUT/cut-planner.html">
+      <div class="tool-name">CUT — Strangler Orchestrator</div>
+      <div class="tool-desc">Berechnet aus einem Abhängigkeitsgraphen und einer Kern/Support/Plugin-Klassifizierung, welche Module sich am günstigsten von einem Kernsystem lösen lassen — priorisiert nach Aufwand und Risiko.</div>
+    </a>
+    <a class="tool-card" href="Architektur-Chronist/architektur-chronist.html">
+      <div class="tool-name">Architektur-Chronist</div>
+      <div class="tool-desc">Baut aus Git-Log + Code-Struktur eine Zeitachse einer Codebase: erkannte Entwicklungsphasen, grober Gesundheitsverlauf, mit Beweis-Verweisen statt bloßer Behauptung.</div>
+    </a>
+    <a class="tool-card" href="mrtb/">
+      <div class="tool-name">MRTB — Memory Red-Teaming Benchmark</div>
+      <div class="tool-desc">Testet, ob ein Memory-/Gedächtnissystem Cross-Tenant-Leaks, Authority-Laundering und Replay-nach-Löschung abwehrt. Reines Code-Tool (kein Single-File-Browser-Tool): zwei Referenz-Adapter (sicher/verwundbar) beweisen, dass der Benchmark den Unterschied zuverlässig erkennt.</div>
+    </a>
+    <a class="tool-card" href="ehrlich-box/index.html">
+      <div class="tool-name">EHRLICH.BOX</div>
+      <div class="tool-desc">Business-Scaffolder ohne Theater: erzeugt im Browser eine echte, herunterladbare Projekt-ZIP aus wählbaren Modulen (README, LICENSE, Docker-Setup, Start-Skripte). Keine Simulation — Dateianzahl, Größe und Prüfsumme sind die echten Werte der erzeugten Datei.</div>
+    </a>
+    <a class="tool-card" href="terminology-audit/index.html">
+      <div class="tool-name">Terminology &amp; Positioning Audit</div>
+      <div class="tool-desc">Übersetzt interne Fantasy-/Codenamen in etablierte Enterprise-Begriffe, mit Begründung je Mapping und fertigen Positionierungstexten (Pitch, Website, Recruiting) zum direkten Kopieren.</div>
+    </a>
+  </div>
+
+  <footer>
+    Quellcode + Lizenz: <a href="https://github.com/bewusstki-hue/bewusstki-tools">github.com/bewusstki-hue/bewusstki-tools</a>
+    · <a href="https://bewusstki.de">bewusstki.de</a>
+  </footer>
+</div>
+</body>
+</html>

@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="EHRLICH.BOX — Business Scaffolder ohne Theater. Wählt echte Module, baut eine echte ZIP-Datei und zeigt echte Zahlen.">
+  <meta name="author" content="EHRLICH.BOX Contributors">
+  <title>EHRLICH.BOX — Business Scaffolder ohne Theater</title>
+
+  <!-- JSZip (kann bei Bedarf lokal gehostet werden) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;600;900&family=Inter:wght@400;500;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #0b0d0c;
+      --panel: #14171596;
+      --line: #26302b;
+      --ink: #eef2ef;
+      --dim: #8fa39a;
+      --real: #3ddc97;
+      --fake: #e8664f;
+      --amber: #e8b94f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: 'Inter', system-ui, sans-serif;
+      background-image:
+        radial-gradient(ellipse 900px 500px at 15% -10%, #123326 0%, transparent 60%),
+        radial-gradient(ellipse 700px 500px at 100% 0%, #1a1f1c 0%, transparent 55%);
+      min-height: 100vh;
+    }
+
+    .wrap {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 56px 24px 100px;
+    }
+
+    h1 {
+      font-family: 'Fraunces', serif;
+      font-weight: 900;
+      font-size: clamp(2.4rem, 6vw, 4.2rem);
+      line-height: 0.95;
+      margin: 0 0 6px;
+      letter-spacing: -0.02em;
+    }
+
+    h1 em {
+      font-style: italic;
+      color: var(--real);
+    }
+
+    .tagline {
+      color: var(--dim);
+      font-size: 1.05rem;
+      margin: 0 0 8px;
+      max-width: 560px;
+    }
+
+    .origin {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--dim);
+      border-left: 2px solid var(--line);
+      padding-left: 12px;
+      margin: 20px 0 44px;
+      line-height: 1.7;
+    }
+
+    .origin b { color: var(--amber); }
+    .origin s { color: var(--fake); opacity: 0.7; }
+    .origin .ok { color: var(--real); }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 28px;
+      margin-bottom: 20px;
+      backdrop-filter: blur(10px);
+    }
+
+    .panel h2 {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin: 0 0 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .panel h2::before {
+      content: '';
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--real);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 10px;
+    }
+
+    .mod {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 14px 16px;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: #0f1210;
+      user-select: none;
+    }
+
+    .mod:hover { border-color: #3ddc9755; }
+    .mod.on {
+      border-color: var(--real);
+      background: #123326;
+    }
+
+    .mod .name {
+      font-weight: 600;
+      font-size: 0.92rem;
+      margin-bottom: 3px;
+    }
+
+    .mod .desc {
+      font-size: 0.76rem;
+      color: var(--dim);
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 18px;
+    }
+
+    @media (max-width: 600px) {
+      .row { grid-template-columns: 1fr; }
+    }
+
+    label {
+      display: block;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      color: var(--dim);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    input[type="text"],
+    input[type="number"] {
+      width: 100%;
+      background: #0f1210;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      color: var(--ink);
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.88rem;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: var(--real);
+    }
+
+    .promptbar {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-top: 16px;
+    }
+
+    .promptbar input[type="range"] {
+      flex: 1;
+      accent-color: var(--real);
+    }
+
+    .promptbar .n {
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--real);
+      font-weight: 700;
+      min-width: 24px;
+      text-align: center;
+    }
+
+    button.build {
+      width: 100%;
+      margin-top: 26px;
+      padding: 18px;
+      border: none;
+      border-radius: 10px;
+      background: var(--real);
+      color: #06140e;
+      font-weight: 700;
+      font-size: 1rem;
+      cursor: pointer;
+      font-family: 'Inter', system-ui, sans-serif;
+      letter-spacing: 0.01em;
+      transition: transform 0.15s;
+    }
+
+    button.build:hover:not(:disabled) {
+      transform: translateY(-1px);
+    }
+
+    button.build:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .log {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.78rem;
+      line-height: 1.9;
+      margin-top: 18px;
+      min-height: 20px;
+    }
+
+    .log .line { color: var(--dim); }
+    .log .line.done { color: var(--real); }
+    .log .line.done::before { content: '✓ '; color: var(--real); }
+    .log .line.pending::before { content: '… '; color: var(--amber); }
+
+    .proof {
+      display: none;
+      margin-top: 22px;
+      padding: 20px;
+      border: 1px solid var(--real);
+      border-radius: 10px;
+      background: #0c1a14;
+    }
+
+    .proof.show { display: block; }
+
+    .proof .head {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.72rem;
+      color: var(--real);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 10px;
+    }
+
+    .stat-row {
+      display: flex;
+      justify-content: space-between;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85rem;
+      padding: 6px 0;
+      border-bottom: 1px solid #1c2521;
+    }
+
+    .stat-row:last-child { border-bottom: none; }
+    .stat-row .k { color: var(--dim); }
+    .stat-row .v { color: var(--ink); font-weight: 600; }
+
+    .dl {
+      display: inline-block;
+      margin-top: 16px;
+      padding: 12px 22px;
+      background: transparent;
+      border: 1px solid var(--real);
+      color: var(--real);
+      border-radius: 8px;
+      font-weight: 700;
+      text-decoration: none;
+      font-size: 0.9rem;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+    }
+
+    .dl:hover {
+      background: var(--real);
+      color: #06140e;
+    }
+
+    footer {
+      margin-top: 40px;
+      color: var(--dim);
+      font-size: 0.78rem;
+      font-family: 'JetBrains Mono', monospace;
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    footer a {
+      color: var(--dim);
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
+    footer a:hover { color: var(--real); }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+
+    <h1>EHRLICH<em>.</em>BOX</h1>
+    <p class="tagline">Wählt echte Module. Baut eine echte ZIP-Datei. Zeigt danach echte Zahlen — keine Story.</p>
+
+    <div class="origin">
+      Fusion aus drei alten Prototypen —
+      <s>Fake-Agenten-Swarm</s>, <s>Fake-Build-Simulation</s> und dem
+      <span class="ok">einen Teil, der wirklich funktionierte</span> (JSZip-Export).
+      Diese Version behauptet nur, was sie beweisen kann.
+    </div>
+
+    <!-- 1. Module -->
+    <div class="panel">
+      <h2>1 · Module wählen</h2>
+      <div class="grid" id="modGrid" role="group" aria-label="Verfügbare Module"></div>
+    </div>
+
+    <!-- 2. Projektdetails -->
+    <div class="panel">
+      <h2>2 · Projekt-Details</h2>
+      <div class="row">
+        <div>
+          <label for="projName">Projektname</label>
+          <input type="text" id="projName" placeholder="mein-projekt" value="mein-projekt" autocomplete="off">
+        </div>
+        <div>
+          <label for="author">Autor / Publisher</label>
+          <input type="text" id="author" placeholder="Dein Name" value="" autocomplete="name">
+        </div>
+      </div>
+      <div style="margin-top:18px">
+        <label for="promptN">Content-Prompts im Pack (falls Modul aktiv)</label>
+        <div class="promptbar">
+          <input type="range" id="promptN" min="0" max="20" value="6" aria-valuemin="0" aria-valuemax="20" aria-valuenow="6">
+          <span class="n" id="promptNval" aria-live="polite">6</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. Bauen -->
+    <div class="panel">
+      <h2>3 · Bauen</h2>
+      <button class="build" id="buildBtn" type="button">ZIP wirklich erstellen</button>
+      <div class="log" id="log" aria-live="polite"></div>
+
+      <div class="proof" id="proof" role="region" aria-label="Verifikationsergebnisse">
+        <div class="head">Verifiziert — nicht behauptet</div>
+        <div class="stat-row"><span class="k">Dateien im Archiv</span><span class="v" id="pFiles">–</span></div>
+        <div class="stat-row"><span class="k">Tatsächliche Größe</span><span class="v" id="pSize">–</span></div>
+        <div class="stat-row"><span class="k">Erstellt am</span><span class="v" id="pTime">–</span></div>
+        <div class="stat-row"><span class="k">Prüfsumme (SHA-256, gekürzt)</span><span class="v" id="pHash">–</span></div>
+        <a class="dl" id="dlBtn" href="#">📦 Echte Datei herunterladen</a>
+      </div>
+    </div>
+
+    <footer>
+      <span>EHRLICH.BOX · Alles was hier „✓“ zeigt, ist tatsächlich passiert — nicht simuliert.</span>
+      <span><a href="https://github.com/" id="repoLink" target="_blank" rel="noopener">Open Source</a> · MIT</span>
+    </footer>
+  </div>
+
+  <script>
+    /**
+     * EHRLICH.BOX
+     * Version: 1.0.0
+     * License: MIT
+     *
+     * Philosophie: Behaupte nur, was du beweisen kannst.
+     */
+
+    // ---------------------------------------------------------------------------
+    // Module-Definition
+    // Neue Module hier ergänzen + Generator in build() hinzufügen.
+    // ---------------------------------------------------------------------------
+    const MODULES = [
+      { id: 'readme',  name: 'README.md',              desc: 'Echt generierte Projekt-Doku',                    on: true  },
+      { id: 'license', name: 'LICENSE (MIT)',           desc: 'Vollständiger Lizenztext',                       on: true  },
+      { id: 'docker',  name: 'docker-compose.yml',      desc: 'Minimal-Setup für lokalen Start',                on: false },
+      { id: 'env',     name: '.env.example',            desc: 'Platzhalter-Umgebungsvariablen',                 on: false },
+      { id: 'start',   name: 'start.sh / start.ps1',    desc: 'Start-Skripte für Mac/Linux + Windows',          on: false },
+      { id: 'prompts', name: 'prompts.txt (Content-Pack)', desc: 'Echte generierte Text-Prompts, keine Tool-Popups', on: true },
+    ];
+
+    // ---------------------------------------------------------------------------
+    // UI: Module-Grid aufbauen
+    // ---------------------------------------------------------------------------
+    const grid = document.getElementById('modGrid');
+
+    MODULES.forEach(m => {
+      const el = document.createElement('div');
+      el.className = 'mod' + (m.on ? ' on' : '');
+      el.setAttribute('role', 'checkbox');
+      el.setAttribute('aria-checked', m.on);
+      el.tabIndex = 0;
+      el.innerHTML = `<div class="name">${m.name}</div><div class="desc">${m.desc}</div>`;
+
+      const toggle = () => {
+        m.on = !m.on;
+        el.classList.toggle('on', m.on);
+        el.setAttribute('aria-checked', m.on);
+      };
+
+      el.addEventListener('click', toggle);
+      el.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          toggle();
+        }
+      });
+
+      grid.appendChild(el);
+    });
+
+    // Prompt-Slider
+    const promptRange = document.getElementById('promptN');
+    const promptVal   = document.getElementById('promptNval');
+
+    promptRange.addEventListener('input', e => {
+      promptVal.textContent = e.target.value;
+      promptRange.setAttribute('aria-valuenow', e.target.value);
+    });
+
+    // ---------------------------------------------------------------------------
+    // Generator-Funktionen (pure, testbar)
+    // ---------------------------------------------------------------------------
+    function generateReadme(name, author, mods) {
+      const date = new Date().toLocaleDateString('de-DE');
+      return `# ${name}
+
+Erstellt mit EHRLICH.BOX von ${author || 'unbekannt'} am ${date}.
+
+## Enthaltene Module
+${mods.map(m => `- ${m.name}`).join('\n')}
+
+## Hinweis
+Diese Dateien wurden lokal in deinem Browser generiert und direkt in dieses ZIP gepackt.
+Es gibt keinen Server, kein „Build“ im Hintergrund, keine Simulation — was du siehst, ist was du bekommst.
+`;
+    }
+
+    function generateLicense(author) {
+      const year = new Date().getFullYear();
+      return `MIT License
+
+Copyright (c) ${year} ${author || 'Unbekannt'}
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+`;
+    }
+
+    function generateDockerCompose(name) {
+      return `version: "3.8"
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    container_name: ${name}
+`;
+    }
+
+    function generateEnvExample() {
+      return `# Umgebungsvariablen — Beispielwerte, keine echten Secrets
+PORT=3000
+NODE_ENV=development
+`;
+    }
+
+    function generateStartSh(name) {
+      return `#!/bin/bash
+set -e
+echo "Starte ${name}..."
+docker compose up -d
+echo "Läuft (hoffentlich) auf http://localhost:3000"
+`;
+    }
+
+    function generateStartPs1(name) {
+      return `Write-Host "Starte ${name}..."
+docker compose up -d
+Write-Host "Laeuft auf http://localhost:3000"
+`;
+    }
+
+    /**
+     * Echter Prompt-Generator.
+     * Nachfolger älterer „Quantum Prompt“-Experimente —
+     * hier als reine Textliste, keine Popup-Kaskaden zu Fremd-Tools.
+     */
+    function generatePrompts(name, n) {
+      const angles = [
+        'Erkläre das Kernproblem, das dieses Projekt löst, in einem Satz.',
+        'Beschreibe die Zielgruppe von {n} und was sie frustriert, bevor sie es finden.',
+        'Formuliere drei Einwände, die ein skeptischer Nutzer gegen {n} hätte.',
+        'Schreibe eine ehrliche Vorher/Nachher-Gegenüberstellung für {n}.',
+        'Liste die drei Dinge, die {n} bewusst NICHT tut.',
+        'Beschreibe den ersten 60-Sekunden-Eindruck eines neuen Nutzers von {n}.',
+        'Formuliere eine Überschrift für {n}, die kein Superlativ enthält.',
+        'Erkläre {n} so, dass es jemand ohne technischen Hintergrund versteht.',
+        'Was müsste passieren, damit ein Nutzer {n} weiterempfiehlt?',
+        'Welche Metrik würde wirklich beweisen, dass {n} funktioniert?',
+        'Schreibe eine kurze Changelog-Zeile für die erste ehrliche Version von {n}.',
+        'Was ist der langweiligste, aber wichtigste Teil von {n}?',
+        'Formuliere eine Frage, die ein Nutzer stellt, bevor er {n} vertraut.',
+        'Beschreibe {n} in der Sprache eines Handwerkers, nicht eines Marketers.',
+        'Was würde ein Kritiker an {n} zurecht bemängeln?',
+        'Welche einzelne Funktion von {n} rechtfertigt seine Existenz?',
+        'Schreibe eine Support-Antwort für den häufigsten Fehler in {n}.',
+        'Was ist der Unterschied zwischen dem, was {n} verspricht, und was es hält?',
+        'Formuliere ein Ziel für {n} in drei Monaten, das messbar ist.',
+        'Beschreibe, wie sich Erfolg für {n} objektiv erkennen lässt.',
+      ];
+
+      const out = [];
+      for (let i = 0; i < n; i++) {
+        out.push(`${i + 1}. ${angles[i % angles.length].replace(/\{n\}/g, name)}`);
+      }
+      return out.join('\n\n');
+    }
+
+    // ---------------------------------------------------------------------------
+    // Hilfsfunktionen
+    // ---------------------------------------------------------------------------
+    function log(msg, cls) {
+      const l = document.getElementById('log');
+      const d = document.createElement('div');
+      d.className = 'line ' + cls;
+      d.textContent = msg;
+      l.appendChild(d);
+      return d;
+    }
+
+    async function simpleChecksum(blob) {
+      const buf = await blob.arrayBuffer();
+      const digest = await crypto.subtle.digest('SHA-256', buf);
+      const hex = Array.from(new Uint8Array(digest))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+      return hex.slice(0, 16) + '…';
+    }
+
+    // ---------------------------------------------------------------------------
+    // Build-Prozess
+    // ---------------------------------------------------------------------------
+    async function build() {
+      const btn = document.getElementById('buildBtn');
+      btn.disabled = true;
+      document.getElementById('log').innerHTML = '';
+      document.getElementById('proof').classList.remove('show');
+
+      const name     = document.getElementById('projName').value.trim() || 'mein-projekt';
+      const author   = document.getElementById('author').value.trim();
+      const promptN  = parseInt(document.getElementById('promptN').value, 10) || 0;
+      const active   = MODULES.filter(m => m.on);
+
+      if (active.length === 0) {
+        log('Kein Modul ausgewählt — nichts zu bauen.', 'pending');
+        btn.disabled = false;
+        return;
+      }
+
+      if (typeof JSZip === 'undefined') {
+        log('JSZip konnte nicht geladen werden. Bitte Internetverbindung prüfen oder lokal einbinden.', 'pending');
+        btn.disabled = false;
+        return;
+      }
+
+      const zip = new JSZip();
+      let fileCount = 0;
+
+      for (const m of active) {
+        const line = log(`Erstelle ${m.name}...`, 'pending');
+
+        // Kurze, ehrliche UI-Pause — kein Fake-Delay-Theater
+        await new Promise(r => setTimeout(r, 180));
+
+        switch (m.id) {
+          case 'readme':
+            zip.file('README.md', generateReadme(name, author, active));
+            fileCount++;
+            break;
+          case 'license':
+            zip.file('LICENSE', generateLicense(author));
+            fileCount++;
+            break;
+          case 'docker':
+            zip.file('docker-compose.yml', generateDockerCompose(name));
+            fileCount++;
+            break;
+          case 'env':
+            zip.file('.env.example', generateEnvExample());
+            fileCount++;
+            break;
+          case 'start':
+            zip.file('start.sh', generateStartSh(name));
+            zip.file('start.ps1', generateStartPs1(name));
+            fileCount += 2;
+            break;
+          case 'prompts':
+            zip.file('prompts.txt', generatePrompts(name, Math.max(promptN, 1)));
+            fileCount++;
+            break;
+        }
+
+        line.className = 'line done';
+        line.textContent = `${m.name} erstellt`;
+      }
+
+      const finalLine = log('Packe ZIP...', 'pending');
+      const blob = await zip.generateAsync({ type: 'blob' });
+      finalLine.className = 'line done';
+      finalLine.textContent = 'ZIP gepackt';
+
+      const hash   = await simpleChecksum(blob);
+      const sizeKb = (blob.size / 1024).toFixed(2);
+
+      document.getElementById('pFiles').textContent = fileCount;
+      document.getElementById('pSize').textContent  = sizeKb + ' KB';
+      document.getElementById('pTime').textContent  = new Date().toLocaleTimeString('de-DE');
+      document.getElementById('pHash').textContent  = hash;
+
+      const url = URL.createObjectURL(blob);
+      const dl  = document.getElementById('dlBtn');
+      dl.href     = url;
+      dl.download = `${name}.zip`;
+
+      document.getElementById('proof').classList.add('show');
+      btn.disabled = false;
+    }
+
+    // Event-Binding
+    document.getElementById('buildBtn').addEventListener('click', build);
+  </script>
+</body>
+</html>

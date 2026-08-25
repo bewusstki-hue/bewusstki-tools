@@ -1,0 +1,15 @@
+RECHNUNG (Muster)
+
+Rechnungsnummer: RE-2026-0142
+Datum: 10.07.2026
+
+Von: Max Mustermann (Test)
+An: Beispiel GmbH
+
+Position                          Menge    Preis
+------------------------------------------------
+Webentwicklung React/Node.js      40 Std.  85,00 €/Std.
+------------------------------------------------
+Gesamtbetrag netto:                        3.400,00 €
+
+Zahlungsziel: 14 Tage netto

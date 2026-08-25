@@ -1,0 +1,13 @@
+REFERENZ-ZEUGNIS
+
+Hiermit bestätigen wir, dass Max Mustermann (Test) im Zeitraum
+Januar 2021 bis Dezember 2026 als freiberuflicher Webentwickler
+für unser Unternehmen tätig war.
+
+Schwerpunkte: React, Node.js, TypeScript
+Projektumfang: 12 abgeschlossene Projekte
+Bewertung: sehr gut
+
+Kontakt zur Verifikation: referenzen@test-beispiel.de
+
+Ausgestellt: 03.03.2026

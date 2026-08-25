@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARA — Architecture Reduction Audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0B0F14; --surface:#10161D; --surface-2:#161D26; --surface-3:#1C242F;
+    --border:#232C36; --border-soft:#1A222B;
+    --text:#E7EDF3; --text-muted:#8B98A5; --text-faint:#5B6672;
+    --accent:#6C8EFF; --accent-soft:rgba(108,142,255,.14); --accent-strong:#8AA5FF;
+    --s-keep:#3FB950; --s-keep-soft:rgba(63,185,80,.14);
+    --s-refactor:#D4A72C; --s-refactor-soft:rgba(212,167,44,.14);
+    --s-merge:#58A6FF; --s-merge-soft:rgba(88,166,255,.14);
+    --s-replace:#F0883E; --s-replace-soft:rgba(240,136,62,.14);
+    --s-remove:#F85149; --s-remove-soft:rgba(248,81,73,.14);
+    --s-unknown:#6E7681; --s-unknown-soft:rgba(110,118,129,.14);
+    --shadow: 0 8px 24px rgba(0,0,0,.35);
+    --radius: 10px;
+    --mono: 'JetBrains Mono', ui-monospace, monospace;
+    --display: 'Space Grotesk', sans-serif;
+    --body: 'Inter', sans-serif;
+  }
+  html[data-theme="light"]{
+    --bg:#F3F4F6; --surface:#FFFFFF; --surface-2:#F8F9FB; --surface-3:#F0F1F4;
+    --border:#DFE2E7; --border-soft:#EAECEF;
+    --text:#161B22; --text-muted:#5B6672; --text-faint:#8B98A5;
+    --accent:#3B5FE0; --accent-soft:rgba(59,95,224,.08); --accent-strong:#2C4CC7;
+    --shadow: 0 8px 24px rgba(20,25,35,.08);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--text); font-family:var(--body);
+    -webkit-font-smoothing:antialiased; min-height:100vh;
+  }
+  ::selection{background:var(--accent-soft); color:var(--text);}
+  ::-webkit-scrollbar{width:10px; height:10px;}
+  ::-webkit-scrollbar-thumb{background:var(--border); border-radius:8px;}
+  ::-webkit-scrollbar-track{background:transparent;}
+  a{color:var(--accent-strong);}
+  button, input, select, textarea{font-family:inherit; color:inherit;}
+  button{cursor:pointer;}
+  :focus-visible{outline:2px solid var(--accent); outline-offset:2px; border-radius:4px;}
+
+  .app{max-width:1360px; margin:0 auto; padding:20px 24px 80px;}
+
+  /* ---------- Header ---------- */
+  header.top{
+    display:flex; align-items:center; justify-content:space-between; gap:20px;
+    padding:18px 0 20px; border-bottom:1px solid var(--border-soft); margin-bottom:20px;
+  }
+  .brand{display:flex; align-items:center; gap:14px;}
+  .brand .mark{
+    width:38px; height:38px; border-radius:9px; background:linear-gradient(155deg, var(--accent), #3F5FD1);
+    display:flex; align-items:center; justify-content:center; font-family:var(--display); font-weight:700; color:#fff; font-size:15px;
+    box-shadow: 0 4px 14px rgba(108,142,255,.35);
+  }
+  .brand h1{font-family:var(--display); font-size:19px; margin:0; font-weight:700; letter-spacing:-.01em;}
+  .brand .sub{font-size:12px; color:var(--text-faint); margin-top:1px;}
+  .header-actions{display:flex; align-items:center; gap:10px;}
+
+  .gauge-wrap{display:flex; align-items:center; gap:16px; background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:10px 16px;}
+  .gauge-nums{display:flex; flex-direction:column;}
+  .gauge-nums .val{font-family:var(--display); font-size:26px; font-weight:700; line-height:1;}
+  .gauge-nums .lbl{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.06em; margin-top:3px;}
+
+  /* ---------- Buttons ---------- */
+  .btn{
+    display:inline-flex; align-items:center; gap:6px; padding:8px 14px; border-radius:8px;
+    border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:13px; font-weight:500;
+    transition:.12s ease;
+  }
+  .btn:hover{border-color:var(--accent); background:var(--surface-3);}
+  .btn.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .btn.primary:hover{background:var(--accent-strong); border-color:var(--accent-strong);}
+  .btn.ghost{background:transparent;}
+  .btn.small{padding:5px 10px; font-size:12px;}
+  .btn.danger{border-color:var(--s-remove); color:var(--s-remove);}
+  .btn.danger:hover{background:var(--s-remove-soft);}
+  .btn:disabled{opacity:.4; cursor:not-allowed;}
+  .icon-btn{width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; border-radius:8px; border:1px solid var(--border); background:var(--surface-2);}
+  .icon-btn:hover{border-color:var(--accent);}
+
+  /* ---------- Tabs ---------- */
+  nav.tabs{display:flex; gap:4px; margin-bottom:22px; border-bottom:1px solid var(--border-soft); overflow-x:auto;}
+  nav.tabs button{
+    background:none; border:none; padding:10px 16px; font-size:13.5px; font-weight:600; color:var(--text-faint);
+    border-bottom:2px solid transparent; white-space:nowrap; font-family:var(--body);
+  }
+  nav.tabs button .n{font-family:var(--mono); font-size:11px; opacity:.6; margin-right:6px;}
+  nav.tabs button:hover{color:var(--text);}
+  nav.tabs button.active{color:var(--text); border-bottom-color:var(--accent);}
+
+  .tab-panel{display:none;}
+  .tab-panel.active{display:block; animation:fadein .15s ease;}
+  @keyframes fadein{from{opacity:0; transform:translateY(3px);} to{opacity:1; transform:none;}}
+
+  /* ---------- Layout blocks ---------- */
+  .grid{display:grid; gap:16px;}
+  .grid.cols-2{grid-template-columns:1fr 1fr;}
+  .grid.cols-3{grid-template-columns:repeat(3,1fr);}
+  @media (max-width:900px){ .grid.cols-2, .grid.cols-3{grid-template-columns:1fr;} }
+
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:18px;}
+  .card h2{font-family:var(--display); font-size:15px; margin:0 0 4px; font-weight:600;}
+  .card .hint{font-size:12.5px; color:var(--text-faint); margin:0 0 14px; line-height:1.5;}
+  .card + .card{margin-top:16px;}
+
+  label.field-label{display:block; font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:6px; text-transform:uppercase; letter-spacing:.04em;}
+  textarea, input[type=text], input[type=number], select{
+    width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:7px; padding:9px 11px;
+    font-size:13px; color:var(--text); font-family:var(--body);
+  }
+  textarea{font-family:var(--mono); font-size:12.5px; line-height:1.55; resize:vertical;}
+  textarea:focus, input:focus, select:focus{border-color:var(--accent);}
+  .row{display:flex; gap:10px; align-items:center; flex-wrap:wrap;}
+  .field{margin-bottom:14px;}
+  .field:last-child{margin-bottom:0;}
+
+  .tag-input-list{display:flex; flex-wrap:wrap; gap:6px; margin-top:6px;}
+  .chip{display:inline-flex; align-items:center; gap:5px; background:var(--surface-3); border:1px solid var(--border); padding:3px 9px 3px 11px; border-radius:20px; font-size:12px;}
+  .chip button{background:none; border:none; color:var(--text-faint); font-size:14px; line-height:1; padding:0;}
+  .chip button:hover{color:var(--s-remove);}
+
+  /* ---------- Status badges ---------- */
+  .badge{
+    display:inline-flex; align-items:center; gap:5px; padding:3px 9px; border-radius:20px; font-size:11.5px; font-weight:600;
+    font-family:var(--mono); letter-spacing:.01em; white-space:nowrap;
+  }
+  .badge .dot{width:7px; height:7px; border-radius:50%;}
+  .badge.KEEP{background:var(--s-keep-soft); color:var(--s-keep);}
+  .badge.KEEP_REFACTOR{background:var(--s-refactor-soft); color:var(--s-refactor);}
+  .badge.MERGE{background:var(--s-merge-soft); color:var(--s-merge);}
+  .badge.REPLACE{background:var(--s-replace-soft); color:var(--s-replace);}
+  .badge.REMOVE{background:var(--s-remove-soft); color:var(--s-remove);}
+  .badge.UNKNOWN{background:var(--s-unknown-soft); color:var(--s-unknown);}
+  .badge.NONE{background:var(--surface-3); color:var(--text-faint);}
+  .badge .dot.KEEP{background:var(--s-keep);} .badge .dot.KEEP_REFACTOR{background:var(--s-refactor);}
+  .badge .dot.MERGE{background:var(--s-merge);} .badge .dot.REPLACE{background:var(--s-replace);}
+  .badge .dot.REMOVE{background:var(--s-remove);} .badge .dot.UNKNOWN{background:var(--s-unknown);}
+
+  .trend{font-size:12px; font-family:var(--mono); font-weight:600;}
+  .trend.up{color:var(--s-remove);} .trend.down{color:var(--s-keep);} .trend.flat{color:var(--text-faint);}
+
+  /* ---------- Table ---------- */
+  table.data{width:100%; border-collapse:collapse; font-size:13px;}
+  table.data th{
+    text-align:left; font-size:10.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--text-faint);
+    padding:8px 10px; border-bottom:1px solid var(--border); font-weight:600; white-space:nowrap;
+  }
+  table.data td{padding:9px 10px; border-bottom:1px solid var(--border-soft); vertical-align:middle;}
+  table.data tbody tr:hover{background:var(--surface-2);}
+  table.data tbody tr.conflict{background:var(--s-replace-soft);}
+  .mono{font-family:var(--mono); font-size:12px;}
+  .muted{color:var(--text-faint);}
+
+  /* spread bar */
+  .spread{position:relative; width:90px; height:14px; background:var(--surface-3); border-radius:4px; overflow:hidden;}
+  .spread .range{position:absolute; top:0; bottom:0; background:var(--accent-soft); border-left:2px solid var(--accent); border-right:2px solid var(--accent);}
+  .spread .avgline{position:absolute; top:0; bottom:0; width:2px; background:var(--text);}
+  .spread-label{font-size:10.5px; color:var(--text-faint); font-family:var(--mono);}
+
+  /* ---------- Filters bar ---------- */
+  .filterbar{display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-bottom:14px;}
+  .qf{font-size:12px; padding:6px 11px; border-radius:20px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-muted); font-weight:600;}
+  .qf.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .search-wrap{position:relative; flex:1; min-width:180px;}
+  .search-wrap input{padding-left:30px;}
+  .search-wrap svg{position:absolute; left:9px; top:50%; transform:translateY(-50%); opacity:.4;}
+
+  /* ---------- Detail panel ---------- */
+  .detail{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:16px; margin-top:6px;}
+  .detail-grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  @media (max-width:800px){ .detail-grid{grid-template-columns:1fr;} }
+  .persp-row{display:flex; align-items:center; gap:8px; font-size:12.5px; padding:4px 0;}
+  .persp-row .name{width:100px; color:var(--text-muted);}
+  .persp-bar{flex:1; height:6px; background:var(--surface-3); border-radius:3px; overflow:hidden;}
+  .persp-bar > div{height:100%; background:var(--accent);}
+  .persp-val{width:32px; text-align:right; font-family:var(--mono); font-size:11.5px;}
+  .evidence-list{list-style:none; margin:8px 0 0; padding:0; font-size:12.5px; line-height:1.7;}
+  .evidence-list li{padding-left:16px; position:relative;}
+  .evidence-list li.plus:before{content:"+"; position:absolute; left:0; color:var(--s-keep); font-weight:700;}
+  .evidence-list li.minus:before{content:"–"; position:absolute; left:0; color:var(--s-remove); font-weight:700;}
+  .tag-pill{display:inline-block; background:var(--surface-3); color:var(--text-faint); font-family:var(--mono); font-size:10px; padding:1px 5px; border-radius:4px; margin-right:5px;}
+
+  .timeline{display:flex; gap:6px; align-items:center; flex-wrap:wrap;}
+  .tl-chip{display:flex; align-items:center; gap:4px; font-size:11px; font-family:var(--mono); padding:2px 7px; border-radius:5px; background:var(--surface-3); border:1px solid var(--border);}
+  .tl-chip .d{width:6px; height:6px; border-radius:50%;}
+  .tl-arrow{color:var(--text-faint); font-size:11px;}
+
+  /* conflict compare */
+  .conflict-box{border:1px dashed var(--s-replace); background:var(--s-replace-soft); border-radius:8px; padding:10px 12px; margin-top:10px; font-size:12.5px;}
+  .conflict-cols{display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:8px;}
+  .conflict-cols .side h4{margin:0 0 4px; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted);}
+
+  /* ---------- Heatmap ---------- */
+  .heatmap{display:grid; gap:3px; grid-template-columns:repeat(auto-fill, minmax(15px,1fr));}
+  .heatcell{aspect-ratio:1; border-radius:2px; cursor:pointer;}
+  .heat-legend{display:flex; align-items:center; gap:6px; font-size:11px; color:var(--text-faint); margin-top:10px;}
+  .heat-legend .sw{width:12px; height:12px; border-radius:2px;}
+
+  /* ---------- Gauge SVG ---------- */
+  .gauge-svg{transform:rotate(-90deg);}
+
+  /* ---------- Reduction plan ---------- */
+  .priority-card{border-left:3px solid var(--border); padding-left:14px; margin-bottom:18px;}
+  .priority-card.P0{border-color:var(--s-remove);}
+  .priority-card.P1{border-color:var(--s-merge);}
+  .priority-card.P2{border-color:var(--s-refactor);}
+  .priority-card.P3{border-color:var(--s-unknown);}
+  .priority-head{display:flex; align-items:center; justify-content:between; gap:10px; margin-bottom:8px;}
+  .priority-head h3{font-family:var(--display); font-size:14px; margin:0;}
+  .priority-count{font-family:var(--mono); font-size:12px; color:var(--text-faint); margin-left:auto;}
+
+  .budget-slider{width:100%;}
+  .budget-track{position:relative; height:8px; background:var(--surface-3); border-radius:4px; margin:14px 0 6px;}
+  .budget-fill{position:absolute; top:0; left:0; bottom:0; background:var(--accent); border-radius:4px;}
+  .budget-target{position:absolute; top:-4px; bottom:-4px; width:2px; background:var(--text);}
+
+  /* misc */
+  .kpi{display:flex; flex-direction:column; gap:2px;}
+  .kpi .v{font-family:var(--display); font-size:24px; font-weight:700;}
+  .kpi .l{font-size:11px; color:var(--text-faint); text-transform:uppercase; letter-spacing:.05em;}
+  hr.sep{border:none; border-top:1px solid var(--border-soft); margin:16px 0;}
+  .toast{position:fixed; bottom:20px; right:20px; background:var(--surface-3); border:1px solid var(--border); padding:11px 16px; border-radius:8px; font-size:13px; box-shadow:var(--shadow); z-index:999; display:flex; align-items:center; gap:8px; max-width:360px;}
+  .toast.err{border-color:var(--s-remove); color:var(--s-remove);}
+  .toast.ok{border-color:var(--s-keep); color:var(--s-keep);}
+  .empty-state{text-align:center; padding:50px 20px; color:var(--text-faint);}
+  .empty-state svg{opacity:.35; margin-bottom:12px;}
+  .empty-state p{font-size:13px; max-width:340px; margin:6px auto 0;}
+  code.k{background:var(--surface-3); padding:1px 6px; border-radius:4px; font-family:var(--mono); font-size:11.5px;}
+  pre.prompt-preview{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:14px; font-family:var(--mono); font-size:11.5px; line-height:1.6; max-height:420px; overflow:auto; white-space:pre-wrap;}
+  .checkbox{width:15px; height:15px; accent-color:var(--accent);}
+  .bulkbar{position:sticky; bottom:16px; display:flex; align-items:center; gap:10px; background:var(--surface-3); border:1px solid var(--accent); border-radius:10px; padding:10px 14px; box-shadow:var(--shadow); margin-top:12px;}
+  .modal-overlay{position:fixed; inset:0; background:rgba(0,0,0,.55); display:flex; align-items:center; justify-content:center; z-index:1000; padding:20px;}
+  .modal{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:22px; max-width:520px; width:100%; box-shadow:var(--shadow);}
+  .modal h3{margin-top:0; font-family:var(--display);}
+  .banner{display:flex; gap:10px; align-items:flex-start; background:var(--accent-soft); border:1px solid var(--accent); border-radius:8px; padding:12px 14px; font-size:12.5px; margin-bottom:16px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <header class="top">
+    <div class="brand">
+      <div class="mark">ARA</div>
+      <div>
+        <h1>Architecture Reduction Audit</h1>
+        <div class="sub" id="hdrSub">Kein Projekt geladen</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <div class="gauge-wrap" id="gaugeWrap" title="Globaler Architecture Drift Score"></div>
+      <button class="icon-btn" id="themeToggle" title="Hell/Dunkel umschalten">◐</button>
+      <button class="btn ghost small" id="resetProjectBtn" title="Neues Projekt">Neues Projekt</button>
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button data-tab="setup" class="active"><span class="n">01</span>Setup</button>
+    <button data-tab="fragebogen"><span class="n">02</span>Fragebogen</button>
+    <button data-tab="import"><span class="n">03</span>Antworten importieren</button>
+    <button data-tab="dashboard"><span class="n">04</span>Dashboard</button>
+    <button data-tab="plan"><span class="n">05</span>Reduction Plan</button>
+    <button data-tab="export"><span class="n">06</span>Export</button>
+  </nav>
+
+  <!-- ===================== TAB: SETUP ===================== -->
+  <section class="tab-panel active" id="tab-setup">
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>1 · System-Manifest importieren</h2>
+        <p class="hint">Füge dein Manifest ein — als JSON-Array, als Tabelle (Tab/Pipe/Komma-getrennt mit Kopfzeile) oder einfach eine Modulliste, eine pro Zeile. ARA erkennt das Format automatisch.</p>
+        <div class="field">
+          <textarea id="manifestInput" rows="10" placeholder='z.B.
+[{"name":"AuthSessionManager","layer":"core","routes":14,"events":3,"dbTables":2,"cron":0,"dependencies":"TokenManager, UserService","notes":"Session Handling"}]
+
+— oder —
+
+Name | Layer | Routes | Events | DB-Tables | Cron | Dependencies | Notes
+AuthSessionManager | core | 14 | 3 | 2 | 0 | TokenManager,UserService | Session Handling'></textarea>
+        </div>
+        <div class="row">
+          <button class="btn primary" id="parseManifestBtn">Manifest parsen</button>
+          <button class="btn ghost small" id="addModuleManualBtn">+ Modul manuell hinzufügen</button>
+          <span class="muted mono" id="manifestParseResult" style="font-size:12px;"></span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>2 · Zielarchitektur definieren</h2>
+        <p class="hint">Der Maßstab, gegen den jedes Modul geprüft wird. Wird direkt in den Fragebogen für deinen Agenten übernommen.</p>
+        <div class="field">
+          <label class="field-label">Principles</label>
+          <div class="row"><input type="text" id="principleInput" placeholder="z.B. minimal_core — Enter zum Hinzufügen"></div>
+          <div class="tag-input-list" id="principlesList"></div>
+        </div>
+        <div class="field">
+          <label class="field-label">Allowed Layers</label>
+          <div class="row"><input type="text" id="layerInput" placeholder="z.B. core — Enter zum Hinzufügen"></div>
+          <div class="tag-input-list" id="layersList"></div>
+        </div>
+        <div class="field">
+          <label class="field-label">Forbidden Patterns</label>
+          <div class="row"><input type="text" id="forbiddenInput" placeholder="z.B. duplicate_services — Enter zum Hinzufügen"></div>
+          <div class="tag-input-list" id="forbiddenList"></div>
+        </div>
+        <div class="field">
+          <label class="field-label">Prioritäten (0–10)</label>
+          <div id="prioritySliders"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" id="moduleTablePreview" style="margin-top:16px;">
+      <h2>Modulübersicht <span class="muted mono" id="moduleCountLabel" style="font-weight:400;font-size:12px;"></span></h2>
+      <p class="hint">Prüfe die importierten Module. Fehlerhafte Zeilen kannst du direkt hier korrigieren.</p>
+      <div style="overflow-x:auto;">
+        <table class="data" id="setupModuleTable"></table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: FRAGEBOGEN ===================== -->
+  <section class="tab-panel" id="tab-fragebogen">
+    <div class="card">
+      <h2>Prüf-Prompt generieren</h2>
+      <p class="hint">ARA erzeugt für jedes Modul einen strukturierten Prüfblock mit 5 Perspektiven + Existenzhypothese. Kopiere den Prompt und lass ihn von Claude / ALEX ausfüllen — die Antwort importierst du danach in Tab 3.</p>
+      <div class="row" style="margin-bottom:14px;">
+        <div>
+          <label class="field-label">Batch-Größe (Module pro Prompt)</label>
+          <input type="number" id="chunkSizeInput" min="1" max="100" style="width:90px;">
+        </div>
+        <div>
+          <label class="field-label">Nur diese Module einschließen</label>
+          <select id="fragebogenScope">
+            <option value="all">Alle Module</option>
+            <option value="unaudited">Nur noch nicht geprüfte</option>
+            <option value="conflicts">Nur Konflikte / Low-Confidence (Re-Audit)</option>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="genPromptsBtn">Prompts generieren</button>
+        <span class="muted mono" id="promptGenResult" style="font-size:12px;"></span>
+      </div>
+    </div>
+    <div id="promptBatches"></div>
+  </section>
+
+  <!-- ===================== TAB: IMPORT ===================== -->
+  <section class="tab-panel" id="tab-import">
+    <div class="card">
+      <h2>Agent-Antwort importieren</h2>
+      <p class="hint">Füge die vollständige Antwort deines Agenten ein (ein oder mehrere <code class="k">### MODULE:</code>-Blöcke). ARA parst, validiert und ordnet jedem Modul die neue Audit-Runde zu; die vorherige Bewertung wandert automatisch in die Historie.</p>
+      <div class="field">
+        <textarea id="answerInput" rows="12" placeholder="### MODULE: auth-session-manager
+DECISION: KEEP_REFACTOR
+CONFIDENCE: architecture=91 dependency=88 runtime=76 redundancy=40 risk=70
+EVIDENCE:
++ [dependency] 14 aktive Routes referenzieren das Modul
++ [architecture] Zielarchitektur verlangt Session Persistence
+- [redundancy] 2 Funktionen überschneiden sich mit TokenManager
+RISK_IF_REMOVED: HIGH
+EXISTENCE_HYPOTHESIS: Verwaltet vermutlich zentrale Session-Persistenz für alle Auth-Flows
+HYPOTHESIS_CONFIRMED: YES
+SUGGESTED_ACTION: Session Persistence behalten, Token Rotation zu TokenManager verschieben"></textarea>
+      </div>
+      <div class="row">
+        <button class="btn primary" id="parseAnswersBtn">Antworten parsen</button>
+        <span class="muted mono" id="answerParseResult" style="font-size:12px;"></span>
+      </div>
+    </div>
+    <div class="card" id="importPreviewCard" style="display:none;">
+      <h2>Vorschau <span class="muted mono" id="importPreviewCount" style="font-weight:400;font-size:12px;"></span></h2>
+      <div style="overflow-x:auto;"><table class="data" id="importPreviewTable"></table></div>
+      <div class="row" style="margin-top:14px;">
+        <button class="btn primary" id="commitImportBtn">Als neue Audit-Runde übernehmen</button>
+        <button class="btn ghost small" id="cancelImportBtn">Verwerfen</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: DASHBOARD ===================== -->
+  <section class="tab-panel" id="tab-dashboard">
+    <div class="grid cols-3" id="kpiRow" style="margin-bottom:16px;"></div>
+
+    <div class="grid cols-2" style="margin-bottom:16px;">
+      <div class="card">
+        <h2>Drift-Breakdown</h2>
+        <div id="driftBreakdown"></div>
+      </div>
+      <div class="card">
+        <h2>Heatmap nach Layer</h2>
+        <p class="hint">Farbcodiertes Raster — Rot = hohes Drift-Risiko, Grün = konform. Klick öffnet das Modul.</p>
+        <div id="heatmapWrap"></div>
+        <div class="heat-legend">
+          <span class="sw" style="background:var(--s-keep)"></span> niedrig
+          <span class="sw" style="background:var(--s-refactor); margin-left:8px;"></span> mittel
+          <span class="sw" style="background:var(--s-remove); margin-left:8px;"></span> hoch
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="filterbar">
+        <div class="search-wrap">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="text" id="searchInput" placeholder="Modul suchen… ( / )">
+        </div>
+        <button class="qf" data-qf="conflicts">⚠ Nur Konflikte</button>
+        <button class="qf" data-qf="lowconf">◔ Low Confidence</button>
+        <button class="qf" data-qf="forbidden">✕ Forbidden-Verletzungen</button>
+        <button class="qf" data-qf="lowhanging">🍇 Low-Hanging-Fruit</button>
+        <select id="decisionFilter" style="width:auto;">
+          <option value="">Alle Decisions</option>
+          <option value="KEEP">KEEP</option>
+          <option value="KEEP_REFACTOR">KEEP/REFACTOR</option>
+          <option value="MERGE">MERGE</option>
+          <option value="REPLACE">REPLACE</option>
+          <option value="REMOVE">REMOVE</option>
+          <option value="UNKNOWN">UNKNOWN</option>
+          <option value="NONE">Nicht geprüft</option>
+        </select>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="data" id="dashboardTable"></table>
+      </div>
+      <div class="bulkbar" id="bulkBar" style="display:none;">
+        <span class="mono" id="bulkCount" style="font-size:12px;"></span>
+        <button class="btn small" id="bulkTagBtn">+ Tag hinzufügen</button>
+        <button class="btn small" id="bulkMemoBtn">Memo setzen</button>
+        <button class="btn small" id="bulkReauditBtn">Re-Audit-Prompt kopieren</button>
+        <button class="btn small ghost" id="bulkClearBtn" style="margin-left:auto;">Auswahl aufheben</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== TAB: PLAN ===================== -->
+  <section class="tab-panel" id="tab-plan">
+    <div class="card">
+      <h2>Reduction Budget</h2>
+      <p class="hint">Wie viel Prozent des Systems willst du reduzieren (REMOVE + MERGE + REPLACE), ohne Kernfunktionalität zu verlieren?</p>
+      <div class="row">
+        <input type="range" id="budgetSlider" min="0" max="80" step="5" style="max-width:340px;">
+        <span class="mono" id="budgetLabel" style="font-size:14px; font-weight:600;"></span>
+      </div>
+      <div class="budget-track"><div class="budget-fill" id="budgetFill"></div></div>
+      <div class="row" style="justify-content:space-between; font-size:11.5px;" class="muted">
+        <span class="muted" id="budgetCurrentLabel"></span>
+        <span class="muted" id="budgetTargetLabel"></span>
+      </div>
+    </div>
+    <div id="priorityGroups" style="margin-top:16px;"></div>
+  </section>
+
+  <!-- ===================== TAB: EXPORT ===================== -->
+  <section class="tab-panel" id="tab-export">
+    <div class="banner" id="reauditBanner" style="display:none;"></div>
+    <div class="grid cols-2">
+      <div class="card">
+        <h2>Entscheidungsmatrix (CSV)</h2>
+        <p class="hint">Alle Felder pro Modul — Decision, Confidence, Evidence, Risk, Priorität, Tags, Memo. Für Team-Review in Excel/Sheets.</p>
+        <button class="btn primary" id="exportCsvBtn">CSV herunterladen</button>
+      </div>
+      <div class="card">
+        <h2>Markdown-Report</h2>
+        <p class="hint">Formatierter Report mit Status-Badges als Emoji, ideal für Confluence, Notion oder Slack.</p>
+        <button class="btn primary" id="exportMdBtn">Markdown herunterladen</button>
+      </div>
+      <div class="card">
+        <h2>Audit-Trail (Fließtext)</h2>
+        <p class="hint">2–3 Sätze pro Modul, direkt kopierbar in Tickets oder E-Mails.</p>
+        <button class="btn primary" id="exportTrailBtn">Als .txt herunterladen</button>
+      </div>
+      <div class="card">
+        <h2>Cleanup-Checkliste</h2>
+        <p class="hint">Nach Phasen gruppiert: Safe Removal → Consolidation → Refactoring → Validation.</p>
+        <button class="btn primary" id="exportChecklistBtn">Checkliste herunterladen</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+/* ============================================================
+   ARA — Architecture Reduction Audit
+   Single-file console. State persisted via window.storage.
+   ============================================================ */
+
+const STORAGE_KEY = 'ara-project-v1';
+const DECISIONS = ['KEEP','KEEP_REFACTOR','MERGE','REPLACE','REMOVE','UNKNOWN'];
+const DECISION_LABEL = {
+  KEEP:'Keep', KEEP_REFACTOR:'Keep / Refactor', MERGE:'Merge', REPLACE:'Replace', REMOVE:'Remove', UNKNOWN:'Unknown', NONE:'Nicht geprüft'
+};
+const DECISION_EMOJI = { KEEP:'🟢', KEEP_REFACTOR:'🟡', MERGE:'🔵', REPLACE:'🟠', REMOVE:'🔴', UNKNOWN:'⚫', NONE:'⚪' };
+const PERSPECTIVES = ['architecture','dependency','runtime','redundancy','risk'];
+const PERSPECTIVE_LABEL = { architecture:'Architektur', dependency:'Dependency', runtime:'Runtime', redundancy:'Redundanz', risk:'Risk' };
+const CONFLICT_THRESHOLD = 30;
+const LOWCONF_THRESHOLD = 55;
+
+let state = defaultState();
+let selection = new Set();
+let expandedModule = null;
+let filters = { search:'', quick:null, decision:'' };
+let pendingImport = null;
+let saveTimer = null;
+
+function defaultState(){
+  return {
+    meta: { createdAt: Date.now(), auditRound: 0, lastAuditAt: null },
+    targetArchitecture: {
+      principles: ['single_responsibility','clear_ownership','evidence_bound','no_duplicate_services'],
+      allowedLayers: ['core','domain','infrastructure','interface'],
+      forbidden: ['duplicate_router','dead_routes','hidden_global_state','unbounded_autonomy'],
+      priorities: { simplicity:8, maintainability:9, performance:5, backward_compatibility:3 }
+    },
+    manifestRaw: '',
+    modules: [],
+    audits: {},
+    settings: { reductionBudgetPercent: 15, theme: 'dark', chunkSize: 15 }
+  };
+}
+
+/* ---------------- Storage ---------------- */
+async function loadState(){
+  try{
+    const res = await window.storage.get(STORAGE_KEY, false);
+    if(res && res.value){
+      const parsed = JSON.parse(res.value);
+      state = Object.assign(defaultState(), parsed);
+      state.targetArchitecture = Object.assign(defaultState().targetArchitecture, parsed.targetArchitecture||{});
+      state.settings = Object.assign(defaultState().settings, parsed.settings||{});
+    }
+  }catch(e){ /* no existing project yet */ }
+  document.documentElement.setAttribute('data-theme', state.settings.theme || 'dark');
+  renderAll();
+}
+function saveState(){
+  clearTimeout(saveTimer);
+  saveTimer = setTimeout(async ()=>{
+    try{
+      await window.storage.set(STORAGE_KEY, JSON.stringify(state), false);
+    }catch(e){ showToast('Speichern fehlgeschlagen: '+e.message, 'err'); }
+  }, 250);
+}
+
+/* ---------------- Utilities ---------------- */
+function uid(){ return Math.random().toString(36).slice(2,9); }
+function slug(s){ return (s||'module').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'') || 'module'; }
+function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+function escapeHtml(s){ return (s==null?'':String(s)).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function showToast(msg, type){
+  const el = document.createElement('div');
+  el.className = 'toast' + (type==='err'?' err':type==='ok'?' ok':'');
+  el.textContent = msg;
+  document.getElementById('toastRoot').appendChild(el);
+  setTimeout(()=>el.remove(), 3800);
+}
+function downloadFile(filename, content, mime){
+  const blob = new Blob([content], {type: mime||'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 2000);
+}
+function copyToClipboard(text){
+  navigator.clipboard.writeText(text).then(()=>showToast('In Zwischenablage kopiert','ok')).catch(()=>showToast('Kopieren fehlgeschlagen','err'));
+}
+
+/* ---------------- Manifest parsing ---------------- */
+function parseManifest(text){
+  text = (text||'').trim();
+  if(!text) return { modules: [], error: 'Kein Text eingefügt.' };
+
+  // 1) JSON
+  try{
+    const j = JSON.parse(text);
+    const arr = Array.isArray(j) ? j : (Array.isArray(j.modules) ? j.modules : null);
+    if(arr){
+      const modules = arr.map(normalizeModule);
+      return { modules, error: null, mode: 'json' };
+    }
+  }catch(e){ /* not JSON, fall through */ }
+
+  // 2) delimited table
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(Boolean);
+  if(lines.length === 0) return { modules: [], error: 'Keine Zeilen gefunden.' };
+
+  let delim = null;
+  if(lines[0].includes('\t')) delim = '\t';
+  else if(lines[0].includes('|')) delim = '|';
+  else if(lines[0].includes(',') && lines[0].split(',').length >= 3) delim = ',';
+
+  if(delim){
+    const headerCells = lines[0].split(delim).map(c=>c.trim().toLowerCase());
+    const looksLikeHeader = headerCells.some(c=>/name|modul|layer|schicht|route|event|depend|abh/.test(c));
+    const dataLines = looksLikeHeader ? lines.slice(1) : lines;
+    const colMap = looksLikeHeader ? mapColumns(headerCells) : null;
+    const modules = dataLines.map(line=>{
+      const cells = line.split(delim).map(c=>c.trim());
+      if(colMap){
+        const obj = {};
+        Object.entries(colMap).forEach(([field, idx])=>{ if(idx>=0) obj[field] = cells[idx]; });
+        return normalizeModule(obj);
+      }else{
+        return normalizeModule({ name: cells[0], layer: cells[1], routes: cells[2], events: cells[3], dbTables: cells[4], cron: cells[5], dependencies: cells[6], notes: cells[7] });
+      }
+    });
+    return { modules, error: null, mode: 'table' };
+  }
+
+  // 3) plain list, one module name per line
+  const modules = lines.map(name=>normalizeModule({ name }));
+  return { modules, error: null, mode: 'list' };
+}
+function mapColumns(headerCells){
+  const find = (patterns)=> headerCells.findIndex(c=>patterns.some(p=>c.includes(p)));
+  return {
+    name: find(['name','modul']),
+    layer: find(['layer','schicht']),
+    routes: find(['route']),
+    events: find(['event']),
+    dbTables: find(['db','tabelle','table']),
+    cron: find(['cron']),
+    dependencies: find(['depend','abh']),
+    notes: find(['note','beschreib','desc'])
+  };
+}
+function normalizeModule(raw){
+  const name = (raw.name || raw.Name || raw.module || 'Unbenanntes Modul').toString().trim();
+  return {
+    id: slug(name) + '-' + uid().slice(0,4),
+    name,
+    layer: (raw.layer||'').toString().trim() || 'unbekannt',
+    routes: numOr0(raw.routes),
+    events: numOr0(raw.events),
+    dbTables: numOr0(raw.dbTables),
+    cron: numOr0(raw.cron),
+    dependencies: (raw.dependencies||'').toString().trim(),
+    notes: (raw.notes||'').toString().trim()
+  };
+}
+function numOr0(v){ const n = parseInt(v,10); return isNaN(n) ? 0 : n; }
+
+/* ---------------- Audit prompt generation ---------------- */
+function buildTargetArchBlock(){
+  const t = state.targetArchitecture;
+  return `Principles: ${t.principles.join(', ')||'—'}
+Allowed Layers: ${t.allowedLayers.join(', ')||'—'}
+Forbidden: ${t.forbidden.join(', ')||'—'}
+Prioritäten: simplicity=${t.priorities.simplicity}, maintainability=${t.priorities.maintainability}, performance=${t.priorities.performance}, backward_compatibility=${t.priorities.backward_compatibility}`;
+}
+function buildModuleBlock(m){
+  return `### MODULE: ${m.id}
+Name: ${m.name}
+Layer: ${m.layer}
+Routes: ${m.routes} | Events: ${m.events} | DB-Tables: ${m.dbTables} | Cron: ${m.cron}
+Dependencies: ${m.dependencies || '—'}
+Notes: ${m.notes || '—'}`;
+}
+function buildPromptForModules(mods){
+  return `Du bist Teil eines mehrstufigen Architektur-Audits (ARA) für ein bestehendes Softwaresystem.
+Deine Aufgabe: Bewerte JEDES der folgenden Module ausschließlich anhand der Zielarchitektur unten. Antworte NUR im vorgegebenen Antwortformat — ein Block pro Modul, sonst kann die Antwort nicht ausgewertet werden. Erfinde keine Fakten; wenn Belege fehlen, senke die Confidence entsprechend.
+
+## ZIELARCHITEKTUR
+${buildTargetArchBlock()}
+
+## PRÜFPERSPEKTIVEN (jede einzeln mit Confidence 0–100 bewerten)
+1. architecture — Passt das Modul zu Principles & erlaubten Layers?
+2. dependency — Wie viele/kritische Abhängigkeiten bestehen (Routes, Services, DB)?
+3. runtime — Gibt es Hinweise auf tatsächliche Nutzung im Betrieb?
+4. redundancy — Überschneidet sich die Funktion mit einem anderen Modul?
+5. risk — Wie hoch ist das Risiko, wenn das Modul entfernt wird?
+
+## EXISTENZHYPOTHESE
+Bilde zuerst die Hypothese "Dieses Modul existiert vermutlich, weil …" und prüfe sie anhand der Daten, statt direkt zu fragen "brauchen wir das?".
+
+## MODULE (${mods.length})
+${mods.map(buildModuleBlock).join('\n\n')}
+
+## ANTWORTFORMAT — GENAU SO, PRO MODUL EIN BLOCK
+### MODULE: <id exakt wie oben>
+DECISION: KEEP|KEEP_REFACTOR|MERGE|REPLACE|REMOVE|UNKNOWN
+CONFIDENCE: architecture=NN dependency=NN runtime=NN redundancy=NN risk=NN
+EVIDENCE:
++ [tag] Beleg dafür (tag = architecture|dependency|runtime|redundancy|risk)
++ [tag] weiterer Beleg
+- [tag] Gegenargument
+RISK_IF_REMOVED: LOW|MEDIUM|HIGH
+EXISTENCE_HYPOTHESIS: kurzer Satz
+HYPOTHESIS_CONFIRMED: YES|NO|PARTIAL
+SUGGESTED_ACTION: konkreter nächster Schritt`;
+}
+
+/* ---------------- Answer parsing ---------------- */
+function parseAnswers(text){
+  text = (text||'').trim();
+  if(!text) return { parsed: [], errors: ['Kein Text eingefügt.'] };
+  const blocks = text.split(/(?=^###\s*MODULE:)/m).map(b=>b.trim()).filter(b=>b.startsWith('### MODULE'));
+  if(blocks.length===0) return { parsed: [], errors: ['Kein "### MODULE:"-Block gefunden. Prüfe das Antwortformat.'] };
+
+  const parsed = []; const errors = [];
+  blocks.forEach(block=>{
+    const idMatch = block.match(/^###\s*MODULE:\s*(.+)$/m);
+    if(!idMatch){ errors.push('Block ohne gültige MODULE-Zeile übersprungen.'); return; }
+    const id = idMatch[1].trim();
+
+    const decisionMatch = block.match(/DECISION:\s*(\w+)/i);
+    const decision = decisionMatch ? decisionMatch[1].toUpperCase() : null;
+    if(!decision || !DECISIONS.includes(decision)){ errors.push(`Modul ${id}: ungültige oder fehlende DECISION.`); return; }
+
+    const confMatch = block.match(/CONFIDENCE:\s*(.+)/i);
+    const confidence = {};
+    if(confMatch){
+      PERSPECTIVES.forEach(p=>{
+        const m = confMatch[1].match(new RegExp(p+'\\s*=\\s*(\\d+)'));
+        confidence[p] = m ? clamp(parseInt(m[1],10),0,100) : null;
+      });
+    }
+    const missingConf = PERSPECTIVES.filter(p=>confidence[p]==null);
+    if(missingConf.length) errors.push(`Modul ${id}: Confidence fehlt für ${missingConf.join(', ')} (auf 50 gesetzt).`);
+    PERSPECTIVES.forEach(p=>{ if(confidence[p]==null) confidence[p]=50; });
+
+    const evBlockMatch = block.match(/EVIDENCE:\s*([\s\S]*?)(?=RISK_IF_REMOVED:|$)/i);
+    const evidence = [];
+    if(evBlockMatch){
+      evBlockMatch[1].split('\n').forEach(line=>{
+        line = line.trim();
+        const m = line.match(/^([+-])\s*(?:\[(\w+)\])?\s*(.+)$/);
+        if(m) evidence.push({ sign: m[1], tag: (m[2]||'general').toLowerCase(), text: m[3].trim() });
+      });
+    }
+
+    const riskMatch = block.match(/RISK_IF_REMOVED:\s*(\w+)/i);
+    const hypoMatch = block.match(/EXISTENCE_HYPOTHESIS:\s*(.+)/i);
+    const hypoConfMatch = block.match(/HYPOTHESIS_CONFIRMED:\s*(\w+)/i);
+    const actionMatch = block.match(/SUGGESTED_ACTION:\s*(.+)/i);
+
+    parsed.push({
+      id, decision, confidence, evidence,
+      riskIfRemoved: riskMatch ? riskMatch[1].toUpperCase() : 'MEDIUM',
+      existenceHypothesis: hypoMatch ? hypoMatch[1].trim() : '',
+      hypothesisConfirmed: hypoConfMatch ? hypoConfMatch[1].toUpperCase() : 'PARTIAL',
+      suggestedAction: actionMatch ? actionMatch[1].trim() : ''
+    });
+  });
+  return { parsed, errors };
+}
+
+/* ---------------- Derived data helpers ---------------- */
+function moduleById(id){ return state.modules.find(m=>m.id===id); }
+function auditOf(id){ return state.audits[id]; }
+function confAvg(conf){ return Math.round(PERSPECTIVES.reduce((s,p)=>s+(conf[p]||0),0)/PERSPECTIVES.length); }
+function confSpread(conf){ const vals = PERSPECTIVES.map(p=>conf[p]||0); return Math.max(...vals)-Math.min(...vals); }
+function isConflict(a){ return a && a.current && confSpread(a.current.confidence) >= CONFLICT_THRESHOLD; }
+function isLowConfidence(a){ return a && a.current && confAvg(a.current.confidence) < LOWCONF_THRESHOLD; }
+function violatesForbidden(m, a){
+  const hay = ((m.layer||'') + ' ' + (a && a.current ? a.current.evidence.map(e=>e.text).join(' ') : '')).toLowerCase();
+  return state.targetArchitecture.forbidden.some(f=>hay.includes(f.toLowerCase().replace(/_/g,' ')) || hay.includes(f.toLowerCase()));
+}
+function violatesLayer(m){
+  if(!state.targetArchitecture.allowedLayers.length) return false;
+  return m.layer && !state.targetArchitecture.allowedLayers.includes(m.layer);
+}
+function isLowHangingFruit(m, a){
+  if(!a || !a.current) return false;
+  const dec = a.current.decision;
+  if(!['REMOVE','REPLACE'].includes(dec)) return false;
+  if(confAvg(a.current.confidence) < 70) return false;
+  const deps = m.routes + m.events + m.cron;
+  if(deps >= 3) return false;
+  return true;
+}
+function priorityOf(m, a){
+  if(!a || !a.current) return 'P3';
+  const d = a.current.decision;
+  const conf = confAvg(a.current.confidence);
+  if(d==='REMOVE' && conf>=70 && a.current.riskIfRemoved!=='HIGH') return 'P0';
+  if(d==='MERGE' || d==='REPLACE') return 'P1';
+  if(d==='KEEP_REFACTOR') return 'P2';
+  if(d==='UNKNOWN' || isConflict(a) || (d==='REMOVE' && (conf<70 || a.current.riskIfRemoved==='HIGH'))) return 'P3';
+  return 'P2';
+}
+function driftContribution(m, a){
+  if(!a || !a.current) return 0.5;
+  const w = { REMOVE:1, REPLACE:0.8, MERGE:0.6, KEEP_REFACTOR:0.4, UNKNOWN:0.5, KEEP:0 };
+  return w[a.current.decision] ?? 0.3;
+}
+function globalDriftScore(){
+  if(state.modules.length===0) return 0;
+  const sum = state.modules.reduce((s,m)=>s+driftContribution(m, state.audits[m.id]), 0);
+  return Math.round(100*sum/state.modules.length);
+}
+function driftBreakdownCounts(){
+  const c = { duplicate:0, dead:0, layer:0, legacy:0, unclear:0 };
+  state.modules.forEach(m=>{
+    const a = state.audits[m.id];
+    if(!a || !a.current){ c.unclear++; return; }
+    const d = a.current.decision;
+    if(d==='MERGE' || d==='REPLACE') c.duplicate++;
+    if(d==='REMOVE') c.dead++;
+    if(violatesLayer(m)) c.layer++;
+    if(a.current.evidence.some(e=>/legacy/i.test(e.text))) c.legacy++;
+    if(d==='UNKNOWN') c.unclear++;
+  });
+  return c;
+}
+function trendFor(a){
+  if(!a || a.history.length===0) return 'flat';
+  const prevSeverity = { KEEP:0, KEEP_REFACTOR:1, UNKNOWN:1.5, MERGE:2, REPLACE:2.5, REMOVE:3 };
+  const prev = a.history[a.history.length-1];
+  const curSev = prevSeverity[a.current.decision] ?? 1;
+  const prevSev = prevSeverity[prev.decision] ?? 1;
+  if(curSev > prevSev) return 'up';
+  if(curSev < prevSev) return 'down';
+  return 'flat';
+}
+function filteredModules(){
+  return state.modules.filter(m=>{
+    const a = state.audits[m.id];
+    if(filters.search){
+      const hay = (m.name+' '+m.id+' '+m.layer).toLowerCase();
+      if(!hay.includes(filters.search.toLowerCase())) return false;
+    }
+    if(filters.decision){
+      const dec = a && a.current ? a.current.decision : 'NONE';
+      if(dec !== filters.decision) return false;
+    }
+    if(filters.quick==='conflicts' && !isConflict(a)) return false;
+    if(filters.quick==='lowconf' && !isLowConfidence(a)) return false;
+    if(filters.quick==='forbidden' && !(violatesForbidden(m,a) || violatesLayer(m))) return false;
+    if(filters.quick==='lowhanging' && !isLowHangingFruit(m,a)) return false;
+    return true;
+  });
+}
+
+/* ---------------- Rendering: shell ---------------- */
+function renderAll(){
+  renderHeader();
+  renderSetupTab();
+  renderFragebogenTab();
+  renderImportTab();
+  renderDashboardTab();
+  renderPlanTab();
+  renderExportTab();
+}
+function renderHeader(){
+  const n = state.modules.length;
+  document.getElementById('hdrSub').textContent = n ? `${n} Module · Runde ${state.meta.auditRound}` : 'Kein Projekt geladen';
+  const score = globalDriftScore();
+  const color = score < 25 ? 'var(--s-keep)' : score < 55 ? 'var(--s-refactor)' : 'var(--s-remove)';
+  const gw = document.getElementById('gaugeWrap');
+  const r = 22, circ = 2*Math.PI*r;
+  const offset = circ - (score/100)*circ;
+  gw.innerHTML = `
+    <svg width="52" height="52" viewBox="0 0 52 52" class="gauge-svg">
+      <circle cx="26" cy="26" r="${r}" fill="none" stroke="var(--border)" stroke-width="5"/>
+      <circle cx="26" cy="26" r="${r}" fill="none" stroke="${color}" stroke-width="5" stroke-linecap="round"
+        stroke-dasharray="${circ}" stroke-dashoffset="${offset}"/>
+    </svg>
+    <div class="gauge-nums"><span class="val" style="color:${color}">${score}</span><span class="lbl">Drift Score</span></div>`;
+}
+
+/* ---------------- Setup tab ---------------- */
+function renderTagList(containerId, items, onRemove){
+  const el = document.getElementById(containerId);
+  el.innerHTML = items.map((it,i)=>`<span class="chip">${escapeHtml(it)}<button data-i="${i}">×</button></span>`).join('');
+  el.querySelectorAll('button').forEach(b=>b.addEventListener('click', ()=>{ onRemove(parseInt(b.dataset.i,10)); }));
+}
+function renderSetupTab(){
+  document.getElementById('manifestInput').value = state.manifestRaw;
+
+  renderTagList('principlesList', state.targetArchitecture.principles, i=>{ state.targetArchitecture.principles.splice(i,1); saveState(); renderSetupTab(); });
+  renderTagList('layersList', state.targetArchitecture.allowedLayers, i=>{ state.targetArchitecture.allowedLayers.splice(i,1); saveState(); renderSetupTab(); });
+  renderTagList('forbiddenList', state.targetArchitecture.forbidden, i=>{ state.targetArchitecture.forbidden.splice(i,1); saveState(); renderSetupTab(); });
+
+  const pr = state.targetArchitecture.priorities;
+  const psEl = document.getElementById('prioritySliders');
+  psEl.innerHTML = Object.keys(pr).map(k=>`
+    <div class="row" style="margin-bottom:8px;">
+      <span style="width:170px; font-size:12.5px; color:var(--text-muted);">${k.replace(/_/g,' ')}</span>
+      <input type="range" min="0" max="10" value="${pr[k]}" data-k="${k}" class="prio-slider" style="flex:1;">
+      <span class="mono" style="width:20px; text-align:right; font-size:12px;">${pr[k]}</span>
+    </div>`).join('');
+  psEl.querySelectorAll('.prio-slider').forEach(s=>{
+    s.addEventListener('input', ()=>{
+      state.targetArchitecture.priorities[s.dataset.k] = parseInt(s.value,10);
+      saveState(); renderSetupTab();
+    });
+  });
+
+  document.getElementById('moduleCountLabel').textContent = state.modules.length ? `(${state.modules.length})` : '';
+  const tbl = document.getElementById('setupModuleTable');
+  if(state.modules.length===0){
+    tbl.innerHTML = `<tr><td class="muted" style="padding:20px 0;">Noch keine Module importiert.</td></tr>`;
+  }else{
+    tbl.innerHTML = `<thead><tr><th>ID</th><th>Name</th><th>Layer</th><th>Routes</th><th>Events</th><th>DB</th><th>Cron</th><th>Dependencies</th><th></th></tr></thead>
+    <tbody>${state.modules.map(m=>`
+      <tr>
+        <td class="mono muted">${escapeHtml(m.id)}</td>
+        <td><input type="text" class="mod-edit" data-id="${m.id}" data-f="name" value="${escapeHtml(m.name)}" style="min-width:140px;"></td>
+        <td><input type="text" class="mod-edit" data-id="${m.id}" data-f="layer" value="${escapeHtml(m.layer)}" style="width:100px;"></td>
+        <td><input type="number" class="mod-edit" data-id="${m.id}" data-f="routes" value="${m.routes}" style="width:60px;"></td>
+        <td><input type="number" class="mod-edit" data-id="${m.id}" data-f="events" value="${m.events}" style="width:60px;"></td>
+        <td><input type="number" class="mod-edit" data-id="${m.id}" data-f="dbTables" value="${m.dbTables}" style="width:60px;"></td>
+        <td><input type="number" class="mod-edit" data-id="${m.id}" data-f="cron" value="${m.cron}" style="width:60px;"></td>
+        <td><input type="text" class="mod-edit" data-id="${m.id}" data-f="dependencies" value="${escapeHtml(m.dependencies)}" style="min-width:140px;"></td>
+        <td><button class="icon-btn del-mod" data-id="${m.id}" title="Modul löschen">🗑</button></td>
+      </tr>`).join('')}</tbody>`;
+    tbl.querySelectorAll('.mod-edit').forEach(inp=>{
+      inp.addEventListener('change', ()=>{
+        const m = moduleById(inp.dataset.id);
+        if(!m) return;
+        const f = inp.dataset.f;
+        m[f] = ['routes','events','dbTables','cron'].includes(f) ? numOr0(inp.value) : inp.value;
+        saveState();
+      });
+    });
+    tbl.querySelectorAll('.del-mod').forEach(b=>{
+      b.addEventListener('click', ()=>{
+        state.modules = state.modules.filter(m=>m.id!==b.dataset.id);
+        delete state.audits[b.dataset.id];
+        saveState(); renderAll();
+      });
+    });
+  }
+}
+
+/* ---------------- Fragebogen tab ---------------- */
+function renderFragebogenTab(){
+  document.getElementById('chunkSizeInput').value = state.settings.chunkSize;
+}
+function scopedModulesForFragebogen(scope){
+  if(scope==='unaudited') return state.modules.filter(m=>!state.audits[m.id]);
+  if(scope==='conflicts') return state.modules.filter(m=>{ const a=state.audits[m.id]; return isConflict(a)||isLowConfidence(a); });
+  return state.modules.slice();
+}
+function renderPromptBatches(mods, chunkSize){
+  const wrap = document.getElementById('promptBatches');
+  if(mods.length===0){ wrap.innerHTML = `<div class="empty-state"><p>Keine Module im gewählten Umfang. Importiere zuerst ein Manifest in Tab 1.</p></div>`; return; }
+  const chunks = [];
+  for(let i=0;i<mods.length;i+=chunkSize) chunks.push(mods.slice(i,i+chunkSize));
+  wrap.innerHTML = chunks.map((chunk,i)=>`
+    <div class="card">
+      <h2>Batch ${i+1} / ${chunks.length} <span class="muted mono" style="font-weight:400; font-size:12px;">(${chunk.length} Module)</span></h2>
+      <pre class="prompt-preview" id="promptPre-${i}"></pre>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary small copy-batch" data-i="${i}">Prompt kopieren</button>
+      </div>
+    </div>`).join('');
+  chunks.forEach((chunk,i)=>{
+    const prompt = buildPromptForModules(chunk);
+    document.getElementById(`promptPre-${i}`).textContent = prompt;
+    wrap.querySelector(`.copy-batch[data-i="${i}"]`).addEventListener('click', ()=>copyToClipboard(prompt));
+  });
+}
+
+/* ---------------- Import tab ---------------- */
+function renderImportTab(){
+  document.getElementById('importPreviewCard').style.display = 'none';
+}
+
+/* ---------------- Dashboard tab ---------------- */
+function renderKpiRow(){
+  const counts = { KEEP:0, KEEP_REFACTOR:0, MERGE:0, REPLACE:0, REMOVE:0, UNKNOWN:0, NONE:0 };
+  state.modules.forEach(m=>{ const a=state.audits[m.id]; counts[a&&a.current?a.current.decision:'NONE']++; });
+  const conflictCount = state.modules.filter(m=>isConflict(state.audits[m.id])).length;
+  const el = document.getElementById('kpiRow');
+  el.innerHTML = `
+    <div class="card"><div class="kpi"><span class="v">${state.modules.length}</span><span class="l">Module gesamt</span></div></div>
+    <div class="card"><div class="kpi"><span class="v" style="color:var(--s-remove)">${counts.REMOVE+counts.MERGE+counts.REPLACE}</span><span class="l">Reduktions-Kandidaten</span></div></div>
+    <div class="card"><div class="kpi"><span class="v" style="color:var(--s-refactor)">${conflictCount}</span><span class="l">Konflikte offen</span></div></div>`;
+}
+function renderDriftBreakdown(){
+  const c = driftBreakdownCounts();
+  const rows = [
+    ['Duplicate functionality', c.duplicate, 'var(--s-merge)'],
+    ['Dead / orphaned', c.dead, 'var(--s-remove)'],
+    ['Layer violations', c.layer, 'var(--s-replace)'],
+    ['Legacy compatibility', c.legacy, 'var(--s-refactor)'],
+    ['Unclear ownership', c.unclear, 'var(--s-unknown)']
+  ];
+  const max = Math.max(1, ...rows.map(r=>r[1]));
+  document.getElementById('driftBreakdown').innerHTML = rows.map(([label,val,color])=>`
+    <div style="margin-bottom:9px;">
+      <div class="row" style="justify-content:space-between; font-size:12px; margin-bottom:3px;"><span class="muted">${label}</span><span class="mono">${val}</span></div>
+      <div style="height:6px; background:var(--surface-3); border-radius:3px; overflow:hidden;"><div style="height:100%; width:${(val/max*100)}%; background:${color};"></div></div>
+    </div>`).join('');
+}
+function renderHeatmap(){
+  const wrap = document.getElementById('heatmapWrap');
+  if(state.modules.length===0){ wrap.innerHTML = `<p class="muted" style="font-size:12.5px;">Keine Module.</p>`; return; }
+  const sevMap = { KEEP:5, KEEP_REFACTOR:35, UNKNOWN:50, MERGE:60, REPLACE:75, REMOVE:95 };
+  const sorted = [...state.modules].sort((a,b)=> (a.layer||'').localeCompare(b.layer||''));
+  wrap.innerHTML = `<div class="heatmap">${sorted.map(m=>{
+    const a = state.audits[m.id];
+    const sev = a && a.current ? sevMap[a.current.decision] : 15;
+    const color = sev < 30 ? 'var(--s-keep)' : sev < 65 ? 'var(--s-refactor)' : 'var(--s-remove)';
+    return `<div class="heatcell" data-id="${m.id}" title="${escapeHtml(m.name)} (${m.layer})" style="background:${color}; opacity:${0.35+sev/150};"></div>`;
+  }).join('')}</div>`;
+  wrap.querySelectorAll('.heatcell').forEach(c=>c.addEventListener('click', ()=>{
+    switchTab('dashboard'); expandedModule = c.dataset.id; filters = {search:'',quick:null,decision:''}; renderDashboardTab();
+    document.getElementById('row-'+c.dataset.id)?.scrollIntoView({behavior:'smooth', block:'center'});
+  }));
+}
+function renderDashboardTab(){
+  renderKpiRow();
+  renderDriftBreakdown();
+  renderHeatmap();
+
+  document.querySelectorAll('.qf').forEach(b=>b.classList.toggle('active', filters.quick===b.dataset.qf));
+  document.getElementById('searchInput').value = filters.search;
+  document.getElementById('decisionFilter').value = filters.decision;
+
+  const mods = filteredModules();
+  const tbl = document.getElementById('dashboardTable');
+  if(state.modules.length===0){
+    tbl.innerHTML = `<tr><td><div class="empty-state"><p>Noch keine Module. Starte in Tab 1 „Setup".</p></div></td></tr>`;
+    document.getElementById('bulkBar').style.display='none';
+    return;
+  }
+  if(mods.length===0){
+    tbl.innerHTML = `<tr><td><div class="empty-state"><p>Keine Module entsprechen den aktuellen Filtern.</p></div></td></tr>`;
+  }else{
+    tbl.innerHTML = `<thead><tr>
+      <th></th><th>Status</th><th>Modul</th><th>Layer</th><th>Confidence-Spread</th><th>Trend</th><th>Risk</th><th>Tags</th><th></th>
+    </tr></thead><tbody>${mods.map(m=>renderModuleRow(m)).join('')}</tbody>`;
+
+    tbl.querySelectorAll('.row-select').forEach(cb=>{
+      cb.checked = selection.has(cb.dataset.id);
+      cb.addEventListener('change', ()=>{
+        if(cb.checked) selection.add(cb.dataset.id); else selection.delete(cb.dataset.id);
+        renderBulkBar();
+      });
+    });
+    tbl.querySelectorAll('.expand-btn').forEach(b=>b.addEventListener('click', ()=>{
+      expandedModule = expandedModule===b.dataset.id ? null : b.dataset.id;
+      renderDashboardTab();
+    }));
+    if(expandedModule){
+      const row = document.getElementById('row-'+expandedModule);
+      if(row){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan="9">${renderModuleDetail(moduleById(expandedModule))}</td>`;
+        row.after(tr);
+        bindDetailEvents(expandedModule);
+      }
+    }
+  }
+  renderBulkBar();
+}
+function renderModuleRow(m){
+  const a = state.audits[m.id];
+  const dec = a && a.current ? a.current.decision : 'NONE';
+  const conflict = isConflict(a);
+  const conf = a && a.current ? a.current.confidence : null;
+  const spreadHtml = conf ? renderSpreadBar(conf) : `<span class="muted mono" style="font-size:11px;">—</span>`;
+  const trend = a ? trendFor(a) : 'flat';
+  const trendGlyph = trend==='up' ? '↑' : trend==='down' ? '↓' : '→';
+  const tags = a && a.tags ? a.tags : [];
+  return `<tr id="row-${m.id}" class="${conflict?'conflict':''}">
+    <td><input type="checkbox" class="checkbox row-select" data-id="${m.id}"></td>
+    <td><span class="badge ${dec}"><span class="dot ${dec}"></span>${DECISION_LABEL[dec]}</span></td>
+    <td><div style="font-weight:600; font-size:12.5px;">${escapeHtml(m.name)}</div><div class="mono muted" style="font-size:10.5px;">${escapeHtml(m.id)}</div></td>
+    <td class="muted" style="font-size:12px;">${escapeHtml(m.layer)}</td>
+    <td>${spreadHtml}</td>
+    <td class="trend ${trend}">${trendGlyph}</td>
+    <td class="muted" style="font-size:12px;">${a && a.current ? a.current.riskIfRemoved : '—'}</td>
+    <td>${tags.slice(0,3).map(t=>`<span class="tag-pill">${escapeHtml(t)}</span>`).join('')}</td>
+    <td><button class="icon-btn expand-btn" data-id="${m.id}">${expandedModule===m.id?'▲':'▼'}</button></td>
+  </tr>`;
+}
+function renderSpreadBar(conf){
+  const vals = PERSPECTIVES.map(p=>conf[p]);
+  const min = Math.min(...vals), max = Math.max(...vals), avg = confAvg(conf);
+  return `<div>
+    <div class="spread"><div class="range" style="left:${min}%; width:${Math.max(2,max-min)}%;"></div><div class="avgline" style="left:${avg}%;"></div></div>
+    <div class="spread-label">ø${avg} · Δ${max-min}</div>
+  </div>`;
+}
+function renderModuleDetail(m){
+  const a = state.audits[m.id] || { current:null, history:[], tags:[], memo:'', note:'' };
+  const c = a.current;
+  let body = '';
+  if(!c){
+    body = `<p class="muted" style="font-size:12.5px;">Noch nicht geprüft. Generiere einen Fragebogen in Tab 2 und importiere die Antwort in Tab 3.</p>`;
+  }else{
+    const persp = PERSPECTIVES.map(p=>`
+      <div class="persp-row"><span class="name">${PERSPECTIVE_LABEL[p]}</span><div class="persp-bar"><div style="width:${c.confidence[p]}%"></div></div><span class="persp-val">${c.confidence[p]}</span></div>`).join('');
+    const evidence = c.evidence.map(e=>`<li class="${e.sign==='+'?'plus':'minus'}"><span class="tag-pill">${escapeHtml(e.tag)}</span>${escapeHtml(e.text)}</li>`).join('') || '<li class="muted">Keine Evidence angegeben.</li>';
+
+    let conflictHtml = '';
+    if(isConflict(a)){
+      const entries = PERSPECTIVES.map(p=>({p, v:c.confidence[p]})).sort((x,y)=>y.v-x.v);
+      const high = entries[0], low = entries[entries.length-1];
+      const evFor = (tag)=>c.evidence.filter(e=>e.tag===tag).map(e=>`<li class="${e.sign==='+'?'plus':'minus'}">${escapeHtml(e.text)}</li>`).join('') || '<li class="muted">Keine Evidence für diese Perspektive.</li>';
+      conflictHtml = `<div class="conflict-box">⚠ Konflikt erkannt — Confidence-Spread ${confSpread(c.confidence)} zwischen den Perspektiven.
+        <div class="conflict-cols">
+          <div class="side"><h4>${PERSPECTIVE_LABEL[high.p]} (${high.v}%)</h4><ul class="evidence-list">${evFor(high.p)}</ul></div>
+          <div class="side"><h4>${PERSPECTIVE_LABEL[low.p]} (${low.v}%)</h4><ul class="evidence-list">${evFor(low.p)}</ul></div>
+        </div></div>`;
+    }
+
+    body = `<div class="detail-grid">
+      <div>
+        ${persp}
+        <hr class="sep">
+        <div style="font-size:12.5px;"><strong>Existenzhypothese:</strong> ${escapeHtml(c.existenceHypothesis||'—')} <span class="tag-pill">${c.hypothesisConfirmed}</span></div>
+        <div style="font-size:12.5px; margin-top:6px;"><strong>Empfehlung:</strong> ${escapeHtml(c.suggestedAction||'—')}</div>
+        ${conflictHtml}
+      </div>
+      <div>
+        <div style="font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); margin-bottom:4px;">Evidence</div>
+        <ul class="evidence-list">${evidence}</ul>
+        <hr class="sep">
+        <div style="font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); margin-bottom:4px;">Historie</div>
+        <div class="timeline">${renderTimeline(a)}</div>
+      </div>
+    </div>
+    <hr class="sep">`;
+  }
+
+  return `<div class="detail">
+    ${body}
+    <div class="grid cols-2">
+      <div>
+        <label class="field-label">Tags</label>
+        <div class="row"><input type="text" class="detail-tag-input" data-id="${m.id}" placeholder="Tag + Enter"></div>
+        <div class="tag-input-list" id="detailTags-${m.id}">${(a.tags||[]).map((t,i)=>`<span class="chip">${escapeHtml(t)}<button data-i="${i}" class="rm-tag" data-id="${m.id}">×</button></span>`).join('')}</div>
+      </div>
+      <div>
+        <label class="field-label">Memo (max. 280 Zeichen)</label>
+        <textarea class="detail-memo" data-id="${m.id}" rows="2" maxlength="280">${escapeHtml(a.memo||'')}</textarea>
+      </div>
+    </div>
+    <div style="margin-top:10px;">
+      <label class="field-label">Notiz (intern, frei)</label>
+      <textarea class="detail-note" data-id="${m.id}" rows="2">${escapeHtml(a.note||'')}</textarea>
+    </div>
+    ${c ? `<div class="row" style="margin-top:12px;"><button class="btn small copy-audittrail" data-id="${m.id}">Audit-Trail-Satz kopieren</button><button class="btn small ghost copy-reaudit" data-id="${m.id}">Re-Audit-Prompt für dieses Modul</button></div>` : ''}
+  </div>`;
+}
+const DECISION_COLOR_VAR = {
+  KEEP:'--s-keep', KEEP_REFACTOR:'--s-refactor', MERGE:'--s-merge', REPLACE:'--s-replace', REMOVE:'--s-remove', UNKNOWN:'--s-unknown'
+};
+function renderTimeline(a){
+  const seq = [...a.history, a.current ? {decision:a.current.decision, round: state.meta.auditRound} : null].filter(Boolean);
+  if(seq.length===0) return `<span class="muted" style="font-size:11.5px;">Noch keine Historie.</span>`;
+  return seq.map((h,i)=>{
+    const colorVar = DECISION_COLOR_VAR[h.decision] || '--s-unknown';
+    const chip = `<span class="tl-chip"><span class="d" style="background:var(${colorVar})"></span>v${h.round??i} ${DECISION_LABEL[h.decision]}</span>`;
+    return i < seq.length-1 ? chip + `<span class="tl-arrow">→</span>` : chip;
+  }).join('');
+}
+function bindDetailEvents(id){
+  const a = ensureAudit(id);
+  const tagInput = document.querySelector(`.detail-tag-input[data-id="${id}"]`);
+  if(tagInput) tagInput.addEventListener('keydown', e=>{
+    if(e.key==='Enter' && tagInput.value.trim()){
+      a.tags.push(tagInput.value.trim()); saveState(); renderDashboardTab();
+    }
+  });
+  document.querySelectorAll(`.rm-tag[data-id="${id}"]`).forEach(b=>b.addEventListener('click', ()=>{
+    a.tags.splice(parseInt(b.dataset.i,10),1); saveState(); renderDashboardTab();
+  }));
+  const memo = document.querySelector(`.detail-memo[data-id="${id}"]`);
+  if(memo) memo.addEventListener('change', ()=>{ a.memo = memo.value.slice(0,280); saveState(); });
+  const note = document.querySelector(`.detail-note[data-id="${id}"]`);
+  if(note) note.addEventListener('change', ()=>{ a.note = note.value; saveState(); });
+  const trailBtn = document.querySelector(`.copy-audittrail[data-id="${id}"]`);
+  if(trailBtn) trailBtn.addEventListener('click', ()=>copyToClipboard(auditTrailSentence(moduleById(id))));
+  const reauditBtn = document.querySelector(`.copy-reaudit[data-id="${id}"]`);
+  if(reauditBtn) reauditBtn.addEventListener('click', ()=>copyToClipboard(buildPromptForModules([moduleById(id)])));
+}
+function ensureAudit(id){
+  if(!state.audits[id]) state.audits[id] = { current:null, history:[], tags:[], memo:'', note:'' };
+  return state.audits[id];
+}
+function renderBulkBar(){
+  const bar = document.getElementById('bulkBar');
+  if(selection.size===0){ bar.style.display='none'; return; }
+  bar.style.display='flex';
+  document.getElementById('bulkCount').textContent = `${selection.size} ausgewählt`;
+}
+
+/* ---------------- Reduction Plan tab ---------------- */
+function renderPlanTab(){
+  document.getElementById('budgetSlider').value = state.settings.reductionBudgetPercent;
+  document.getElementById('budgetLabel').textContent = state.settings.reductionBudgetPercent + '%';
+  const total = state.modules.length;
+  const reduced = state.modules.filter(m=>{ const a=state.audits[m.id]; return a&&a.current&&['REMOVE','MERGE','REPLACE'].includes(a.current.decision); }).length;
+  const currentPct = total ? Math.round(100*reduced/total) : 0;
+  const targetPct = state.settings.reductionBudgetPercent;
+  document.getElementById('budgetFill').style.width = Math.min(100,currentPct)+'%';
+  document.getElementById('budgetFill').style.background = currentPct >= targetPct ? 'var(--s-keep)' : 'var(--accent)';
+  const targetEl = document.querySelector('.budget-target');
+  document.querySelectorAll('.budget-target').forEach(e=>e.remove());
+  const marker = document.createElement('div'); marker.className='budget-target'; marker.style.left = targetPct+'%';
+  document.querySelector('.budget-track').appendChild(marker);
+  document.getElementById('budgetCurrentLabel').textContent = `Aktuell: ${reduced} von ${total} Modulen (${currentPct}%)`;
+  document.getElementById('budgetTargetLabel').textContent = `Ziel: ${targetPct}%`;
+
+  const groups = { P0:[], P1:[], P2:[], P3:[] };
+  state.modules.forEach(m=>{ const a=state.audits[m.id]; if(!a||!a.current) return; groups[priorityOf(m,a)].push({m,a}); });
+  const meta = {
+    P0: { title:'PHASE 1 · Safe Removal', desc:'Hohe Confidence, geringes Risiko, wenige Abhängigkeiten — sicher entfernbar.' },
+    P1: { title:'PHASE 2 · Consolidation', desc:'Merge- und Replace-Kandidaten — Funktionalität zusammenlegen oder ersetzen.' },
+    P2: { title:'PHASE 3 · Refactoring', desc:'Grundsätzlich richtig, aber zu komplex — überarbeiten statt entfernen.' },
+    P3: { title:'PHASE 4 · Investigate', desc:'Unklare Lage, Konflikte oder hohes Risiko — vor Aktion weiter prüfen.' }
+  };
+  const wrap = document.getElementById('priorityGroups');
+  wrap.innerHTML = ['P0','P1','P2','P3'].map(p=>{
+    const list = groups[p];
+    return `<div class="card priority-card ${p}">
+      <div class="priority-head"><h3>${meta[p].title}</h3><span class="priority-count">${list.length} Module</span></div>
+      <p class="hint">${meta[p].desc}</p>
+      ${list.length===0 ? '<p class="muted" style="font-size:12px;">Keine Module in dieser Phase.</p>' : `
+      <table class="data"><thead><tr><th>Modul</th><th>Decision</th><th>Confidence</th><th>Risk</th><th>Deps</th><th></th></tr></thead>
+      <tbody>${list.map(({m,a})=>`
+        <tr class="${isLowHangingFruit(m,a)?'':''}">
+          <td>${escapeHtml(m.name)} ${isLowHangingFruit(m,a)?'<span class="tag-pill" style="color:var(--s-keep); border:1px solid var(--s-keep);">🍇 low-hanging</span>':''}</td>
+          <td><span class="badge ${a.current.decision}"><span class="dot ${a.current.decision}"></span>${DECISION_LABEL[a.current.decision]}</span></td>
+          <td class="mono">${confAvg(a.current.confidence)}%</td>
+          <td class="muted">${a.current.riskIfRemoved}</td>
+          <td class="muted mono">${m.routes+m.events+m.cron}</td>
+          <td><button class="btn small ghost jump-mod" data-id="${m.id}">Ansehen</button></td>
+        </tr>`).join('')}</tbody></table>`}
+    </div>`;
+  }).join('');
+  wrap.querySelectorAll('.jump-mod').forEach(b=>b.addEventListener('click', ()=>{
+    expandedModule = b.dataset.id; switchTab('dashboard'); filters={search:'',quick:null,decision:''}; renderDashboardTab();
+    setTimeout(()=>document.getElementById('row-'+b.dataset.id)?.scrollIntoView({behavior:'smooth',block:'center'}), 50);
+  }));
+}
+
+/* ---------------- Export tab ---------------- */
+function auditTrailSentence(m){
+  const a = state.audits[m.id];
+  if(!a || !a.current) return `Modul '${m.name}' → noch nicht geprüft.`;
+  const c = a.current;
+  const mainEvidence = c.evidence[0] ? c.evidence[0].text : (c.existenceHypothesis || 'keine Evidence dokumentiert');
+  return `Modul '${m.name}' → ${DECISION_LABEL[c.decision]} (Confidence ${confAvg(c.confidence)}%). Hauptgrund: ${mainEvidence}. Empfehlung: ${c.suggestedAction || '—'}.`;
+}
+function recommendedNextAudit(){
+  const decs = state.modules.map(m=>state.audits[m.id]).filter(a=>a&&a.current);
+  if(decs.length===0) return null;
+  const conflicts = decs.filter(a=>isConflict(a)).length;
+  const removeReplace = decs.filter(a=>['REMOVE','REPLACE'].includes(a.current.decision)).length;
+  const keepRefactor = decs.filter(a=>['KEEP','KEEP_REFACTOR'].includes(a.current.decision)).length;
+  if(conflicts > 0) return { weeks:1, reason:`${conflicts} offene Konflikte gefunden` };
+  if(removeReplace > keepRefactor) return { weeks:2, reason:'viele Remove/Replace-Entscheidungen — Ergebnis zeitnah validieren' };
+  return { weeks:4, reason:'überwiegend Keep/Refactor — stabiler Zustand' };
+}
+function renderExportTab(){
+  const rec = recommendedNextAudit();
+  const banner = document.getElementById('reauditBanner');
+  if(rec){
+    banner.style.display='flex';
+    banner.innerHTML = `<span>📅</span><div>Empfohlenes nächstes Audit: in <strong>${rec.weeks} Woche${rec.weeks>1?'n':''}</strong> — ${rec.reason}.
+    <div style="margin-top:8px;"><button class="btn small primary" id="copyReauditFlaggedBtn">Prompt für offene Module kopieren</button></div></div>`;
+    document.getElementById('copyReauditFlaggedBtn')?.addEventListener('click', ()=>{
+      const flagged = state.modules.filter(m=>{ const a=state.audits[m.id]; return isConflict(a)||isLowConfidence(a)||!a; });
+      if(flagged.length===0){ showToast('Keine offenen Module gefunden.'); return; }
+      copyToClipboard(buildPromptForModules(flagged));
+    });
+  }else{
+    banner.style.display='none';
+  }
+}
+function toCSV(){
+  const header = ['ModuleID','Name','Layer','Decision','Conf_Architecture','Conf_Dependency','Conf_Runtime','Conf_Redundancy','Conf_Risk','Conf_Avg','Conf_Spread','RiskIfRemoved','Priority','Tags','Memo','Note','Round'];
+  const rows = state.modules.map(m=>{
+    const a = state.audits[m.id]; const c = a && a.current;
+    return [
+      m.id, m.name, m.layer,
+      c?c.decision:'NONE',
+      c?c.confidence.architecture:'', c?c.confidence.dependency:'', c?c.confidence.runtime:'', c?c.confidence.redundancy:'', c?c.confidence.risk:'',
+      c?confAvg(c.confidence):'', c?confSpread(c.confidence):'',
+      c?c.riskIfRemoved:'', c?priorityOf(m,a):'',
+      a?a.tags.join(';'):'', a?(a.memo||'').replace(/\n/g,' '):'', a?(a.note||'').replace(/\n/g,' '):'',
+      state.meta.auditRound
+    ].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
+  });
+  return [header.join(','), ...rows].join('\n');
+}
+function toMarkdown(){
+  let md = `# ARA Report — ${new Date().toLocaleDateString('de-DE')}\n\nDrift Score: **${globalDriftScore()}/100** · Runde ${state.meta.auditRound} · ${state.modules.length} Module\n\n`;
+  ['P0','P1','P2','P3'].forEach(p=>{});
+  md += `## Module\n\n| Status | Modul | Layer | Confidence | Risk | Priorität |\n|---|---|---|---|---|---|\n`;
+  state.modules.forEach(m=>{
+    const a = state.audits[m.id]; const c = a && a.current;
+    md += `| ${DECISION_EMOJI[c?c.decision:'NONE']} ${c?DECISION_LABEL[c.decision]:'—'} | ${m.name} | ${m.layer} | ${c?confAvg(c.confidence)+'%':'—'} | ${c?c.riskIfRemoved:'—'} | ${c?priorityOf(m,a):'—'} |\n`;
+  });
+  md += `\n## Details\n\n`;
+  state.modules.forEach(m=>{
+    const a = state.audits[m.id]; const c = a && a.current;
+    md += `### ${DECISION_EMOJI[c?c.decision:'NONE']} ${m.name}\n\n`;
+    if(c){
+      md += `- **Decision:** ${DECISION_LABEL[c.decision]} (Confidence ø${confAvg(c.confidence)}%, Spread ${confSpread(c.confidence)})\n`;
+      md += `- **Risk if removed:** ${c.riskIfRemoved}\n`;
+      md += `- **Existenzhypothese:** ${c.existenceHypothesis} (${c.hypothesisConfirmed})\n`;
+      md += `- **Evidence:**\n${c.evidence.map(e=>`  - ${e.sign} [${e.tag}] ${e.text}`).join('\n')}\n`;
+      md += `- **Empfehlung:** ${c.suggestedAction}\n`;
+    } else { md += `- Noch nicht geprüft.\n`; }
+    if(a && a.memo) md += `- **Memo:** ${a.memo}\n`;
+    md += `\n`;
+  });
+  return md;
+}
+function toAuditTrail(){
+  return state.modules.map(m=>auditTrailSentence(m)).join('\n\n');
+}
+function toChecklist(){
+  const groups = { P0:[], P1:[], P2:[], P3:[] };
+  state.modules.forEach(m=>{ const a=state.audits[m.id]; if(!a||!a.current) return; groups[priorityOf(m,a)].push(m); });
+  let out = `ARA CLEANUP PLAN — Runde ${state.meta.auditRound}\nDrift Score: ${globalDriftScore()}/100\n\n`;
+  out += `PHASE 1 — Safe Removal (${groups.P0.length})\n` + groups.P0.map(m=>`[ ] ${m.name} (${m.id})`).join('\n') + '\n\n';
+  out += `PHASE 2 — Consolidation (${groups.P1.length})\n` + groups.P1.map(m=>`[ ] ${m.name} (${m.id})`).join('\n') + '\n\n';
+  out += `PHASE 3 — Refactoring (${groups.P2.length})\n` + groups.P2.map(m=>`[ ] ${m.name} (${m.id})`).join('\n') + '\n\n';
+  out += `PHASE 4 — Investigate (${groups.P3.length})\n` + groups.P3.map(m=>`[ ] ${m.name} (${m.id})`).join('\n') + '\n\n';
+  out += `PHASE 5 — Validation\n[ ] Tests laufen lassen\n[ ] Routes validieren\n[ ] Dependency Graph prüfen\n[ ] Manifest neu generieren\n[ ] Re-Audit einplanen\n`;
+  return out;
+}
+
+/* ---------------- Tabs & global events ---------------- */
+function switchTab(name){
+  document.querySelectorAll('nav.tabs button').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.toggle('active', p.id==='tab-'+name));
+}
+document.getElementById('tabs').addEventListener('click', e=>{
+  const b = e.target.closest('button[data-tab]');
+  if(b) switchTab(b.dataset.tab);
+});
+
+document.getElementById('themeToggle').addEventListener('click', ()=>{
+  state.settings.theme = state.settings.theme==='dark' ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', state.settings.theme);
+  saveState();
+});
+document.getElementById('resetProjectBtn').addEventListener('click', ()=>{
+  openModal('Neues Projekt starten?', 'Das löscht das aktuell geladene Manifest, alle Bewertungen und die Historie unwiderruflich.', ()=>{
+    state = defaultState(); selection.clear(); expandedModule=null; saveState(); renderAll(); showToast('Neues Projekt gestartet','ok');
+  });
+});
+
+/* Setup events */
+document.getElementById('parseManifestBtn').addEventListener('click', ()=>{
+  const text = document.getElementById('manifestInput').value;
+  const { modules, error, mode } = parseManifest(text);
+  const resultEl = document.getElementById('manifestParseResult');
+  if(error || modules.length===0){
+    resultEl.style.color = 'var(--s-remove)';
+    resultEl.textContent = error || 'Es konnten keine Module erkannt werden.';
+    return;
+  }
+  state.manifestRaw = text;
+  state.modules = modules;
+  resultEl.style.color = 'var(--s-keep)';
+  resultEl.textContent = `${modules.length} Module erkannt (Format: ${mode}).`;
+  saveState(); renderAll();
+  showToast(`${modules.length} Module importiert`, 'ok');
+});
+document.getElementById('addModuleManualBtn').addEventListener('click', ()=>{
+  state.modules.push(normalizeModule({ name: 'Neues Modul' }));
+  saveState(); renderSetupTab();
+});
+['principle','layer','forbidden'].forEach(kind=>{
+  const map = { principle:'principles', layer:'allowedLayers', forbidden:'forbidden' };
+  document.getElementById(kind+'Input').addEventListener('keydown', e=>{
+    if(e.key==='Enter' && e.target.value.trim()){
+      state.targetArchitecture[map[kind]].push(e.target.value.trim());
+      e.target.value=''; saveState(); renderSetupTab();
+    }
+  });
+});
+
+/* Fragebogen events */
+document.getElementById('chunkSizeInput').addEventListener('change', e=>{
+  state.settings.chunkSize = clamp(parseInt(e.target.value,10)||15, 1, 100); saveState();
+});
+document.getElementById('genPromptsBtn').addEventListener('click', ()=>{
+  const scope = document.getElementById('fragebogenScope').value;
+  const mods = scopedModulesForFragebogen(scope);
+  const size = state.settings.chunkSize || 15;
+  renderPromptBatches(mods, size);
+  document.getElementById('promptGenResult').textContent = mods.length ? `${mods.length} Module in ${Math.ceil(mods.length/size)} Batch(es).` : '';
+});
+
+/* Import events */
+document.getElementById('parseAnswersBtn').addEventListener('click', ()=>{
+  const text = document.getElementById('answerInput').value;
+  const { parsed, errors } = parseAnswers(text);
+  const resultEl = document.getElementById('answerParseResult');
+  if(parsed.length===0){
+    resultEl.style.color='var(--s-remove)'; resultEl.textContent = errors[0] || 'Nichts gefunden.';
+    document.getElementById('importPreviewCard').style.display='none';
+    return;
+  }
+  pendingImport = parsed;
+  resultEl.style.color = errors.length ? 'var(--s-refactor)' : 'var(--s-keep)';
+  resultEl.textContent = `${parsed.length} Module geparst${errors.length ? `, ${errors.length} Hinweis(e)` : ''}.`;
+  if(errors.length) showToast(errors[0], 'err');
+
+  const card = document.getElementById('importPreviewCard');
+  card.style.display = 'block';
+  document.getElementById('importPreviewCount').textContent = `(${parsed.length})`;
+  const tbl = document.getElementById('importPreviewTable');
+  tbl.innerHTML = `<thead><tr><th>ID</th><th>Bekannt?</th><th>Decision</th><th>Conf ø</th><th>Spread</th><th>Risk</th></tr></thead>
+    <tbody>${parsed.map(p=>{
+      const known = !!moduleById(p.id);
+      return `<tr><td class="mono">${escapeHtml(p.id)}</td><td>${known?'✓':'<span style="color:var(--s-remove)">unbekannt</span>'}</td>
+      <td><span class="badge ${p.decision}"><span class="dot ${p.decision}"></span>${DECISION_LABEL[p.decision]}</span></td>
+      <td class="mono">${confAvg(p.confidence)}%</td><td class="mono">${confSpread(p.confidence)}</td><td class="muted">${p.riskIfRemoved}</td></tr>`;
+    }).join('')}</tbody>`;
+});
+document.getElementById('cancelImportBtn').addEventListener('click', ()=>{
+  pendingImport = null; document.getElementById('importPreviewCard').style.display='none';
+});
+document.getElementById('commitImportBtn').addEventListener('click', ()=>{
+  if(!pendingImport || pendingImport.length===0) return;
+  let unknownCount = 0;
+  state.meta.auditRound += 1;
+  const round = state.meta.auditRound;
+  pendingImport.forEach(p=>{
+    if(!moduleById(p.id)){ unknownCount++; return; }
+    const a = ensureAudit(p.id);
+    if(a.current) a.history.push({ decision:a.current.decision, confidenceAvg: confAvg(a.current.confidence), round: a.current.round, timestamp: Date.now() });
+    a.current = { decision:p.decision, confidence:p.confidence, evidence:p.evidence, riskIfRemoved:p.riskIfRemoved,
+      existenceHypothesis:p.existenceHypothesis, hypothesisConfirmed:p.hypothesisConfirmed, suggestedAction:p.suggestedAction, round };
+  });
+  state.meta.lastAuditAt = Date.now();
+  pendingImport = null;
+  document.getElementById('importPreviewCard').style.display='none';
+  document.getElementById('answerInput').value='';
+  document.getElementById('answerParseResult').textContent='';
+  saveState(); renderAll();
+  showToast(`Runde ${round} übernommen${unknownCount?`, ${unknownCount} unbekannte ID(s) übersprungen`:''}`, 'ok');
+  switchTab('dashboard');
+});
+
+/* Dashboard events */
+document.getElementById('searchInput').addEventListener('input', e=>{ filters.search = e.target.value; renderDashboardTab(); });
+document.addEventListener('keydown', e=>{
+  if(e.key==='/' && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA'){
+    e.preventDefault(); switchTab('dashboard'); document.getElementById('searchInput').focus();
+  }
+  if(/^[1-6]$/.test(e.key) && document.activeElement.tagName!=='INPUT' && document.activeElement.tagName!=='TEXTAREA'){
+    const names=['setup','fragebogen','import','dashboard','plan','export'];
+    switchTab(names[parseInt(e.key,10)-1]);
+  }
+});
+document.querySelectorAll('.qf').forEach(b=>b.addEventListener('click', ()=>{
+  filters.quick = filters.quick===b.dataset.qf ? null : b.dataset.qf; renderDashboardTab();
+}));
+document.getElementById('decisionFilter').addEventListener('change', e=>{ filters.decision = e.target.value; renderDashboardTab(); });
+document.getElementById('bulkClearBtn').addEventListener('click', ()=>{ selection.clear(); renderDashboardTab(); });
+document.getElementById('bulkTagBtn').addEventListener('click', ()=>{
+  openPromptModal('Tag zu Auswahl hinzufügen', 'Tag-Name', (val)=>{
+    if(!val) return;
+    selection.forEach(id=>{ const a=ensureAudit(id); if(!a.tags.includes(val)) a.tags.push(val); });
+    saveState(); renderDashboardTab(); showToast(`Tag zu ${selection.size} Modulen hinzugefügt`,'ok');
+  });
+});
+document.getElementById('bulkMemoBtn').addEventListener('click', ()=>{
+  openPromptModal('Memo für Auswahl setzen', 'Memo-Text (max. 280 Zeichen)', (val)=>{
+    if(val==null) return;
+    selection.forEach(id=>{ const a=ensureAudit(id); a.memo = val.slice(0,280); });
+    saveState(); renderDashboardTab(); showToast(`Memo für ${selection.size} Module gesetzt`,'ok');
+  });
+});
+document.getElementById('bulkReauditBtn').addEventListener('click', ()=>{
+  const mods = state.modules.filter(m=>selection.has(m.id));
+  copyToClipboard(buildPromptForModules(mods));
+});
+
+/* Plan events */
+document.getElementById('budgetSlider').addEventListener('input', e=>{
+  state.settings.reductionBudgetPercent = parseInt(e.target.value,10); saveState(); renderPlanTab();
+});
+
+/* Export events */
+document.getElementById('exportCsvBtn').addEventListener('click', ()=>downloadFile('ara-entscheidungsmatrix.csv', toCSV(), 'text/csv'));
+document.getElementById('exportMdBtn').addEventListener('click', ()=>downloadFile('ara-report.md', toMarkdown(), 'text/markdown'));
+document.getElementById('exportTrailBtn').addEventListener('click', ()=>downloadFile('ara-audit-trail.txt', toAuditTrail(), 'text/plain'));
+document.getElementById('exportChecklistBtn').addEventListener('click', ()=>downloadFile('ara-cleanup-checklist.txt', toChecklist(), 'text/plain'));
+
+/* ---------------- Modals ---------------- */
+function openModal(title, body, onConfirm){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="modal-overlay"><div class="modal">
+    <h3>${escapeHtml(title)}</h3><p style="font-size:13px; color:var(--text-muted);">${escapeHtml(body)}</p>
+    <div class="row" style="justify-content:flex-end; margin-top:16px;">
+      <button class="btn ghost" id="modalCancel">Abbrechen</button>
+      <button class="btn danger" id="modalConfirm">Bestätigen</button>
+    </div></div></div>`;
+  root.querySelector('#modalCancel').addEventListener('click', ()=>root.innerHTML='');
+  root.querySelector('#modalConfirm').addEventListener('click', ()=>{ root.innerHTML=''; onConfirm(); });
+}
+function openPromptModal(title, placeholder, onConfirm){
+  const root = document.getElementById('modalRoot');
+  root.innerHTML = `<div class="modal-overlay"><div class="modal">
+    <h3>${escapeHtml(title)}</h3>
+    <input type="text" id="modalInput" placeholder="${escapeHtml(placeholder)}" style="margin-top:8px;">
+    <div class="row" style="justify-content:flex-end; margin-top:16px;">
+      <button class="btn ghost" id="modalCancel">Abbrechen</button>
+      <button class="btn primary" id="modalConfirm">Übernehmen</button>
+    </div></div></div>`;
+  const input = root.querySelector('#modalInput'); input.focus();
+  root.querySelector('#modalCancel').addEventListener('click', ()=>root.innerHTML='');
+  root.querySelector('#modalConfirm').addEventListener('click', ()=>{ const v=input.value.trim(); root.innerHTML=''; onConfirm(v); });
+  input.addEventListener('keydown', e=>{ if(e.key==='Enter'){ const v=input.value.trim(); root.innerHTML=''; onConfirm(v); } });
+}
+
+loadState();
+</script>
+</body>
+</html>
