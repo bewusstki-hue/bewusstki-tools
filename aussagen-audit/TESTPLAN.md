@@ -120,4 +120,4 @@ Testdaten liegen fertig in `test-fixtures/` — nichts selbst ausdenken nötig, 
 ---
 
 **Zuletzt bearbeitet:** 2026-08-15
-**Von:** Claude Code (MERIDIAN)
+**Von:** Bewusst.KI

@@ -65,3 +65,9 @@ Pull Requests und Issues sind willkommen. Besonders nützlich:
 - Weitere Beispiel-Mappings aus anderen Domänen
 - Verbesserte Export-Formate (Markdown, CSV)
 - Persistenz-Optionen (optional, localStorage)
+
+---
+
+**Zuletzt bearbeitet:** 2026-08-27
+**Von:** Bewusst.KI
+Interne Modellreferenz und unbelegte Reifeclaims aus den Beispieltexten entfernt.

@@ -25,5 +25,5 @@ tun (echte Dopplung), muss weiterhin jemand lesen, das sieht der Graph nicht.
 
 ---
 
-**Zuletzt bearbeitet:** 2026-08-17
-**Von:** Claude Code (MERIDIAN)
+**Zuletzt bearbeitet:** 2026-08-27
+**Von:** Bewusst.KI

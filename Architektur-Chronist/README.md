@@ -2,7 +2,8 @@
 
 Browser-Tool, das aus Git-Log, Code-Struktur und optionalen Audit-Daten eine chronologische
 Übersicht einer Codebase erzeugt: erkannte Epochen, ein heuristischer Gesundheits-Index über die
-Zeit, auffällige Ereignisse. Läuft komplett lokal, keine Installation.
+Zeit und auffällige Ereignisse. Die Zusammenfassung wird deterministisch aus den eingelesenen
+Fakten erzeugt. Läuft komplett lokal, ohne externe Modell-API und ohne Installation.
 
 ## Was es macht
 
@@ -21,4 +22,8 @@ nutzt, sollte jede Behauptung an den mitgelieferten Beweis-Karten selbst gegenpr
 ---
 
 **Zuletzt bearbeitet:** 2026-08-17
-**Von:** Claude Code (MERIDIAN)
+**Von:** Bewusst.KI
+
+**Zuletzt bearbeitet:** 2026-08-27
+**Von:** Bewusst.KI
+Externe Modellbindung entfernt; Zusammenfassungen werden jetzt lokal und deterministisch erzeugt.

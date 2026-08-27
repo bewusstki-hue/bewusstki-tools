@@ -643,40 +643,24 @@ src/auth/session.ts 212"></textarea>
     return {pkg, ghosts, quotes, avgHealth, isCrisis};
   }
 
-  // ---------- API call ----------
+  // ---------- Deterministische lokale Zusammenfassung ----------
   async function generateEpochStory(pkg, toneMode){
-    const toneInstruction = toneMode === 'nuechtern'
-      ? 'sachlich, knapp und nüchtern, wie ein Ermittlungsbericht'
-      : 'spannend erzählt, aber vollständig realistisch und unaufgeregt-glaubwürdig';
-    const sys = 'Du bist ein forensischer Code-Archäologe. Du bekommst ein striktes Beweispaket (JSON) mit Fakten aus einer Epoche der Git-Historie einer Software. '
-      + 'AUFGABE: Schreibe daraus eine Epochen-Erzählung auf Deutsch, Stil: ' + toneInstruction + ', Länge 150-220 Wörter. '
-      + 'HARTE REGELN: Erfinde nichts, das nicht aus den gelieferten Daten ableitbar ist. Nenne keine Namen von Personen ausser den im Datenpaket gelieferten Autorennamen. '
-      + 'Kausale Verbindungen, die du vermutest aber nicht beweisen kannst, formuliere explizit als Vermutung (z.B. "das lässt vermuten, dass..."). '
-      + 'Gib zusätzlich einen atmosphärischen, aber ableitbaren Epochen-Titel (max. 6 Wörter). '
-      + 'Antworte AUSSCHLIESSLICH als reines JSON-Objekt ohne Markdown-Codeblock, ohne Einleitung, ohne Nachsatz: {"title":"...","story":"...","causalChains":["...", "..."]}. causalChains ist eine Liste von 0-3 kurzen vermuteten Ursache-Wirkungs-Ketten, leer wenn keine erkennbar.';
-
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 1000,
-        system: sys,
-        messages: [{role:'user', content: JSON.stringify(pkg)}]
-      })
-    });
-    const data = await res.json();
-    const text = (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('\n');
-    const clean = text.replace(/```json|```/g,'').trim();
-    try {
-      const parsed = JSON.parse(clean);
-      if(!parsed.title) parsed.title = 'Epoche ' + pkg.epochIndex;
-      if(!parsed.story) parsed.story = text;
-      if(!parsed.causalChains) parsed.causalChains = [];
-      return parsed;
-    } catch(e){
-      return {title: 'Epoche ' + pkg.epochIndex, story: text || 'Die Erzählung konnte nicht generiert werden.', causalChains: []};
-    }
+    const mode = toneMode === 'nuechtern' ? 'Prüfzeitraum' : 'Entwicklungsphase';
+    const signals = [];
+    if(pkg.crisisSignals.reverts) signals.push(`${pkg.crisisSignals.reverts} Revert(s)`);
+    if(pkg.crisisSignals.typoFixes) signals.push(`${pkg.crisisSignals.typoFixes} Korrektur-Commit(s)`);
+    if(pkg.crisisSignals.frustrationQuoteCount) signals.push(`${pkg.crisisSignals.frustrationQuoteCount} auffällige Commit-Nachricht(en)`);
+    const authors = (pkg.topAuthors || []).map(a=>`${a.name} (${a.commits})`).join(', ') || 'nicht ermittelt';
+    const story = `${mode} ${pkg.dateRange}: ${pkg.commitCount} Commits, durchschnittlicher `
+      + `Gesundheitsindex ${pkg.averageHealthIndex}. Hauptbeitragende: ${authors}. `
+      + (signals.length ? `Erkannte Signale: ${signals.join(', ')}. ` : 'Keine besonderen Krisensignale erkannt. ')
+      + `${(pkg.ghostProjects || []).length} begonnene Themen hatten im betrachteten Zeitraum nur wenige erkennbare Folgeänderungen. `
+      + 'Diese Zusammenfassung folgt ausschließlich den eingelesenen Git-Metadaten; Ursachen und Motive werden nicht behauptet.';
+    return {
+      title: `${mode} ${pkg.epochIndex}`,
+      story,
+      causalChains: [],
+    };
   }
 
   // ---------- Rendering: evidence card ----------

@@ -8,7 +8,7 @@ Installation, keine Anmeldung.
 Sechs Schritte: Manifest importieren (Module + Layer + Routes/Events/DB-Tabellen/Cron) → Zielarchitektur
 definieren (Prinzipien, erlaubte Layer, verbotene Muster) → pro Modul einen strukturierten Prüf-Prompt
 generieren (5 Perspektiven: Architektur, Abhängigkeiten, Laufzeit, Redundanz, Risiko) → die Antwort eines
-Agenten (Claude, ChatGPT, egal) im vorgegebenen Format wieder einlesen → Dashboard mit
+Werkzeuge oder Sprachmodelle im vorgegebenen Format wieder einlesen → Dashboard mit
 Konflikt-Erkennung (>30% Bewertungs-Spread zwischen Perspektiven) → Reduktionsplan in vier
 Phasen exportieren (CSV, Markdown, Checkliste).
 
@@ -30,5 +30,5 @@ die Struktur vorgeben.
 
 ---
 
-**Zuletzt bearbeitet:** 2026-08-17
-**Von:** Claude Code (MERIDIAN)
+**Zuletzt bearbeitet:** 2026-08-27
+**Von:** Bewusst.KI

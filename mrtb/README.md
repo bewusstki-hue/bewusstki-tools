@@ -75,5 +75,5 @@ erhöhen, bevor Signing/Evidence-Bundle-Layer angegangen wird.
 
 ---
 
-**Zuletzt bearbeitet:** 2026-08-17
-**Von:** Claude Code (MERIDIAN)
+**Zuletzt bearbeitet:** 2026-08-27
+**Von:** Bewusst.KI
