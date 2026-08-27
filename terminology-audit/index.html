@@ -446,22 +446,6 @@ const DATA = [
     rationale: '„OS“ (Betriebssystem) suggeriert einen Anspruch, den das Produkt technisch nicht einlöst und der bei technischen Prüfern sofort Skepsis auslöst. Der Kern des Produkts ist die unabhängig prüfbare Kontroll- und Nachweisschicht für KI-Agenten-Arbeit — das ist der Begriff, der auch in Security- und Compliance-Software (z. B. „Policy Engine“, „Assurance Platform“) Standard ist.'
   },
   {
-    id: 'ghostbus',
-    category: 'Kernkomponenten',
-    old: 'GhostBus',
-    new: 'Event Bus',
-    description: 'Das interne Kommunikationssystem, über das alle Systemkomponenten Ereignisse (z. B. „Agent hat Aufgabe gestartet“) austauschen, statt sich direkt gegenseitig aufzurufen.',
-    rationale: 'Event-getriebene Architekturen sind ein etabliertes, gut dokumentiertes Muster (z. B. Kafka, RabbitMQ, EventBridge). „Event Bus“ beschreibt exakt, was das System tut, ohne Erklärungsbedarf.'
-  },
-  {
-    id: 'ghostdb',
-    category: 'Kernkomponenten',
-    old: 'ghost.db',
-    new: 'state.db / audit.db',
-    description: 'Die Datenbank (SQLite), in der Systemzustände und Audit-Historie gespeichert werden.',
-    rationale: 'Der Dateiname sollte den Inhalt beschreiben (Zustand, Audit-Historie), nicht eine Metapher transportieren. Reduziert Erklärungsaufwand in technischer Dokumentation und Code-Reviews.'
-  },
-  {
     id: 'kronos',
     category: 'Kernkomponenten',
     old: 'KRONOS',
@@ -548,14 +532,6 @@ const DATA = [
     new: 'nicht mehr aktiv referenzieren',
     description: 'Frühere Sammlung von System-Manifesten, Kernel-Definitionen und Multi-Agenten-Persona-Frameworks, aus der das aktuelle System ursprünglich hervorgegangen ist.',
     rationale: 'Als abgeschlossene Vorstufe intern dokumentieren, aber nicht mehr in der Außendarstellung erwähnen — verhindert, dass Prüfer eine verwirrende Historie mehrerer „OS“-Namen nachvollziehen müssen.'
-  },
-  {
-    id: 'sovereign-ghost-os',
-    category: 'Historie',
-    old: 'Sovereign Ghost OS (Vorgängerprojekt)',
-    new: 'nicht mehr aktiv referenzieren',
-    description: 'Multi-Agenten-IDE mit Council-Pipeline und Vektor-Datenbank — direkte Vorstufe.',
-    rationale: 'Gleiche Begründung wie bei anderen Vorgängerprojekten: als interne Entwicklungshistorie behalten, aber aus der öffentlichen Namensführung entfernen.'
   },
   {
     id: 'evidence-package',

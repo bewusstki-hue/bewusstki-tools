@@ -34,6 +34,10 @@ versteckte Bedingungen.
 ---
 
 **Zuletzt bearbeitet:** 2026-08-27
+**Von:** Codex (MERIDIAN)
+Interne historische Beispielnamen aus dem öffentlichen Terminologie-Audit entfernt.
+
+**Zuletzt bearbeitet:** 2026-08-27
 **Von:** Bewusst.KI
 EHRLICH.BOX + Terminology-Audit ergänzt (aus `ehrlich-box-and-terminology-audit.zip` restrukturiert
 — das Zip bündelte beide Tools mit einem eigenen "wie auf GitHub veröffentlichen"-Wrapper-README für
