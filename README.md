@@ -34,7 +34,7 @@ versteckte Bedingungen.
 ---
 
 **Zuletzt bearbeitet:** 2026-08-27
-**Von:** Codex (MERIDIAN)
+**Von:** MERIDIAN
 Interne historische Beispielnamen aus dem öffentlichen Terminologie-Audit entfernt.
 
 **Zuletzt bearbeitet:** 2026-08-27
